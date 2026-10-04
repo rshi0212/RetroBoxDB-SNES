@@ -1,0 +1,554 @@
+{
+  "platform": "snes",
+  "note": "Assembled from the events table: the build process completed import, scans, diff, catalog, No-Intro, packages, RetroAchievements and names, then was stopped during its legacy-order audit. The audit below is the storage-v4 locality-ordered audit (same checks: integrity, foreign keys, every compression group, every object against its full checksum set, every archive plan regenerated).",
+  "build_log_tail": [
+    "16:01:40 progress zips 3250 groups 100 raw MiB 2979 stored MiB 1054 elapsed 1007",
+    "16:05:13 progress zips 4078 groups 120 raw MiB 3599 stored MiB 1260 elapsed 1219",
+    "16:08:07 progress zips 4739 groups 140 raw MiB 4182 stored MiB 1459 elapsed 1393",
+    "16:08:48 ROM import done {\"directories\": [\"/mnt/MyShare/No-Intro/Nintendo - Super Nintendo Entertainment System\", \"/mnt/MyShare/No-Intro/Nintendo - Super Nintendo Entertainment System (Aftermarket)\", \"/mnt/MyShare/No-Intro/Nintendo - Super Nintendo Entertainment System (Private)\"], \"families\": 2007, \"family_assignment\": {\"family_from_dat_or_db\": 4873, \"family_from_title\": 25}, \"groups\": 145, \"raw_group_bytes\": 4547127366, \"stored_group_bytes\": 1591582339, \"zips\": 4898, \"seconds\": 1435} errors 0",
+    "16:09:11 scan/diff/catalog {\"scan\": {\"1\": {\"match\": 4255, \"mismatch\": 0, \"unverifiable\": 0, \"no_candidate\": 63}, \"2\": {\"match\": 4261, \"mismatch\": 0, \"unverifiable\": 0, \"no_candidate\": 70}}, \"dat_diff\": {\"1->2\": {\"unchanged\": 4313, \"added\": 13, \"renamed\": 5}}, \"catalog\": {\"games\": 1996, \"releases\": 4329, \"old_dat_games_linked\": 4318, \"rom_release_links\": 4261}}",
+    "16:09:17 Parsed file identities and DAT links",
+    "16:09:19 nointro {\"snapshot_id\": 1, \"version\": \"20261003-140326\", \"archives\": 4365, \"files\": 5457, \"files_with_local_payload\": 4276, \"sources\": 12153, \"dumplog_rows\": 4362, \"dat_links\": 8649, \"archive_release_links\": 4326, \"hardware_assertions\": 5399, \"dumplog_status\": {\"unverified\": 736, \"verified\": 1871, \"trusted_unverified\": 1708, \"bad\": 18, \"no_dump\": 28, \"unknown\": 1}, \"anomalies\": {\"file_without_sha256\": 38}}",
+    "16:14:35 packages 1 4255 / 4255",
+    "16:19:48 packages 2 4261 / 4261",
+    "16:19:53 retroachievements {\"snapshot_id\": 1, \"console_id\": 3, \"fetched_at\": \"2026-10-04T08:19:51.117278+00:00\", \"games\": 2832, \"hashes\": 5214, \"games_with_achievements\": 1185, \"hashes_of_games_with_achievements\": 2220, \"local_roms_matched\": 914, \"ra_games_with_local_rom\": 673, \"dat_entries_matched\": 1826, \"ra_games_in_any_dat\": 672, \"hashes_with_achievements_unexplained\": 1306, \"by_category_local\": {\"Homebrew\": 10, \"Official\": 648, \"Prototype\": 11, \"Test Kit\": 1, \"Unlicensed\": 3}}",
+    "16:19:54 names {\"source_name\": \"Nintendo - Super Nintendo Entertainment System.csv\", \"source_sha256\": \"4d818f53428f1f614052afd0e5edeafde0bcda85c897051bf596c6bdec60126e\", \"normalization_version\": \"parentheses-whitespace-casefold-v1\", \"import_id\": 1, \"matching_version\": \"game-qualified-title-v1\", \"rows\": 4154, \"rows_with_chinese\": 3942, \"unique_chinese_names\": 2030, \"normalized_titles\": 2405, \"matched_rows\": 4099, \"matched_rows_with_chinese\": 3889, \"matched_releases\": 4075, \"releases_with_chinese\": 3864, \"matched_games\": 1896, \"matched_roms\": 4071, \"matched_links\": 4593, \"ambiguous_links\": 75, \"ambiguous_rows\"",
+    "16:20:08 audit-all start"
+  ],
+  "dat_sets": [
+    {
+      "id": 1,
+      "name": "Nintendo - Super Nintendo Entertainment System (Parent-Clone)",
+      "version": "20260710-203222"
+    },
+    {
+      "id": 2,
+      "name": "Nintendo - Super Nintendo Entertainment System (Parent-Clone)",
+      "version": "20261003-140326"
+    }
+  ],
+  "rom_import": [
+    {
+      "directories": [
+        "/mnt/MyShare/No-Intro/Nintendo - Super Nintendo Entertainment System",
+        "/mnt/MyShare/No-Intro/Nintendo - Super Nintendo Entertainment System (Aftermarket)",
+        "/mnt/MyShare/No-Intro/Nintendo - Super Nintendo Entertainment System (Private)"
+      ],
+      "errors": [],
+      "families": 2007,
+      "family_assignment": {
+        "family_from_dat_or_db": 4873,
+        "family_from_title": 25
+      },
+      "groups": 145,
+      "raw_group_bytes": 4547127366,
+      "seconds": 1435,
+      "stored_group_bytes": 1591582339,
+      "zips": 4898,
+      "_at": "2026-10-04T08:08:48.735190+00:00"
+    }
+  ],
+  "scan": [
+    {
+      "counts": {
+        "match": 4255,
+        "mismatch": 0,
+        "no_candidate": 63,
+        "unverifiable": 0
+      },
+      "_at": "2026-10-04T08:08:49.515554+00:00"
+    },
+    {
+      "counts": {
+        "match": 4261,
+        "mismatch": 0,
+        "no_candidate": 70,
+        "unverifiable": 0
+      },
+      "_at": "2026-10-04T08:08:50.221418+00:00"
+    }
+  ],
+  "dat_diff": [
+    {
+      "counts": {
+        "added": 13,
+        "renamed": 5,
+        "unchanged": 4313
+      },
+      "new_dat_set": 2,
+      "old_dat_set": 1,
+      "_at": "2026-10-04T08:08:50.551343+00:00"
+    }
+  ],
+  "catalog": {
+    "games": 1996,
+    "releases": 4329,
+    "rom_release_links": 4261
+  },
+  "nointro": [
+    {
+      "report": {
+        "anomalies": {
+          "file_without_sha256": 38
+        },
+        "archive_release_links": 4326,
+        "archives": 4365,
+        "dat_links": 8649,
+        "dumplog_rows": 4362,
+        "dumplog_status": {
+          "bad": 18,
+          "no_dump": 28,
+          "trusted_unverified": 1708,
+          "unknown": 1,
+          "unverified": 736,
+          "verified": 1871
+        },
+        "files": 5457,
+        "files_with_local_payload": 4276,
+        "hardware_assertions": 5399,
+        "snapshot_id": 1,
+        "sources": 12153,
+        "version": "20261003-140326"
+      },
+      "_at": "2026-10-04T08:09:19.123222+00:00"
+    }
+  ],
+  "packages": {
+    "1": 4255,
+    "2": 4261
+  },
+  "retroachievements": [
+    {
+      "by_category_local": {
+        "Homebrew": 10,
+        "Official": 648,
+        "Prototype": 11,
+        "Test Kit": 1,
+        "Unlicensed": 3
+      },
+      "console_id": 3,
+      "dat_entries_matched": 1826,
+      "fetched_at": "2026-10-04T08:19:51.117278+00:00",
+      "games": 2832,
+      "games_with_achievements": 1185,
+      "hashes": 5214,
+      "hashes_of_games_with_achievements": 2220,
+      "hashes_with_achievements_unexplained": 1306,
+      "local_roms_matched": 914,
+      "ra_games_in_any_dat": 672,
+      "ra_games_with_local_rom": 673,
+      "snapshot_id": 1,
+      "_at": "2026-10-04T08:19:51.117278+00:00"
+    }
+  ],
+  "game_names": {
+    "source_name": "Nintendo - Super Nintendo Entertainment System.csv",
+    "source_sha256": "4d818f53428f1f614052afd0e5edeafde0bcda85c897051bf596c6bdec60126e",
+    "normalization_version": "parentheses-whitespace-casefold-v1",
+    "import_id": 1,
+    "matching_version": "game-qualified-title-v1",
+    "rows": 4154,
+    "rows_with_chinese": 3942,
+    "unique_chinese_names": 2030,
+    "normalized_titles": 2405,
+    "matched_rows": 4099,
+    "matched_rows_with_chinese": 3889,
+    "matched_releases": 4075,
+    "releases_with_chinese": 3864,
+    "matched_games": 1896,
+    "matched_roms": 4071,
+    "matched_links": 4593,
+    "ambiguous_links": 75,
+    "ambiguous_rows": 10,
+    "unmatched_rows": 45,
+    "unresolved_rows": [
+      {
+        "row_number": 268,
+        "name_en": "Beethoven's 2nd (USA) (Beta) (1993-09-13)",
+        "name_cn": null,
+        "status": "unmatched"
+      },
+      {
+        "row_number": 308,
+        "name_en": "Blackthorne (USA) (Beta) (CES)",
+        "name_cn": "黑暗之鹰",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 370,
+        "name_en": "BS-X - Sore wa Namae o Nusumareta Machi no Monogatari (Japan) (Rev 1)",
+        "name_cn": "BS-X - 名字被偷走之城",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 1325,
+        "name_en": "Itadaki Street 2 - Neon Sign wa Barairo ni (Japan)",
+        "name_cn": "创业人生 2",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 1326,
+        "name_en": "Itadaki Street 2 - Neon Sign wa Barairo ni (Japan) (Beta) (1993-12-20)",
+        "name_cn": "创业人生 2",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 1488,
+        "name_en": "Kamai-tachi no Yoru (Japan)",
+        "name_cn": "恐怖惊魂夜",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 1513,
+        "name_en": "Kessen! Dokapon Oukoku IV - Densetsu no Yuusha-tachi (Japan) (v.07.315) (Beta)",
+        "name_cn": "多卡波王国 4",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 1514,
+        "name_en": "Kessen! Dokapon Oukoku IV - Densetsu no Yuusha-tachi (Japan) (v.07.431) (Beta)",
+        "name_cn": "多卡波王国 4",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 1528,
+        "name_en": "Kid Klown in Crazy Chase (USA) (Beta 1) (Earlier)",
+        "name_cn": "小丑王子大冒险",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 1681,
+        "name_en": "Lion King, The (USA) (Beta 3) (v.21)",
+        "name_cn": "狮子王",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 1682,
+        "name_en": "Lion King, The (USA) (Beta 4) (v.48)",
+        "name_cn": "狮子王",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 1845,
+        "name_en": "Mega lo Mania (Europe) (En,Fr,De) (Beta)",
+        "name_cn": "诸神领地战",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 2320,
+        "name_en": "Pinocchio (USA) (Beta) (Early)",
+        "name_cn": "木偶奇遇记",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 2814,
+        "name_en": "Snake Blaster (World) (Proto) (Unl)",
+        "name_cn": null,
+        "status": "unmatched"
+      },
+      {
+        "row_number": 2850,
+        "name_en": "Soul Blazer (Scandinavia) (En)",
+        "name_cn": "创世封魔录",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 2934,
+        "name_en": "Star Fox 2 (USA) (Beta) (1994-12-28) (CES)",
+        "name_cn": "星际火狐 2",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 3689,
+        "name_en": "Tom & Jerry (Europe) (Proto) (1994-07-11)",
+        "name_cn": "猫和老鼠",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4089,
+        "name_en": "SD Ultra Battle - Ultraman Densetsu (Japan)",
+        "name_cn": "SD英雄超战斗 - 奥特曼传说",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4090,
+        "name_en": "SD Ultra Battle - Seven Densetsu (Japan)",
+        "name_cn": "SD英雄超战斗 - 赛文奥特曼传说",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4091,
+        "name_en": "Poi Poi Ninja World (Japan)",
+        "name_cn": "波波伊忍者世界",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4092,
+        "name_en": "Gegege no Kitarou - Youkai Donjara (Japan)",
+        "name_cn": "鬼太郎 - 妖怪咚加拉",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4093,
+        "name_en": "SD Gundam Generation - Ichinen Sensouki (Japan)",
+        "name_cn": "SD高达世代 - 一年战争故事",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4094,
+        "name_en": "SD Gundam Generation - Gryps Senki (Japan)",
+        "name_cn": "SD高达世代 - 格里普斯战记",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4095,
+        "name_en": "SD Gundam Generation - Axis Senki (Japan)",
+        "name_cn": "SD高达世代 - 阿克西斯战记",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4096,
+        "name_en": "SD Gundam Generation - Babylonia Kenkoku Senki (Japan)",
+        "name_cn": "SD高达世代 - 巴比伦建国战争故事",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4097,
+        "name_en": "Gekisou Sentai Carranger - Zenkai! Racer Senshi (Japan)",
+        "name_cn": "激战战队指挥者 - 全油门赛车战士！",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4098,
+        "name_en": "SD Gundam Generation - Zanscare Senki (Japan)",
+        "name_cn": "SD高达世代 - 赞斯卡战争编年史",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4099,
+        "name_en": "SD Gundam Generation - Colony Kakutouki (Japan)",
+        "name_cn": "SD高达世代 - 殖民地战斗故事",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4100,
+        "name_en": "Crayon Shin-chan - Nagagutsu Dobon!! (Japan)",
+        "name_cn": "蜡笔小新 - 长靴子！",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4101,
+        "name_en": "Bishoujo Senshi Sailor Moon Sailor Stars - Fuwafuwa Panic 2 (Japan)",
+        "name_cn": "美少女战士水手明星 - 福娃福娃恐慌 2",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4111,
+        "name_en": "Ippatsu Gyakuten!! Keiba Keirin Kyoutei (Japan)",
+        "name_cn": "一发逆转",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4131,
+        "name_en": "Trials of Mana (World)",
+        "name_cn": "圣剑传说 3",
+        "status": "ambiguous"
+      },
+      {
+        "row_number": 4132,
+        "name_en": "Dragon Quest III (Japan)",
+        "name_cn": "勇者斗恶龙 3 - 传说的终结",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4133,
+        "name_en": "Dragon Quest V (Japan)",
+        "name_cn": "勇者斗恶龙 5 - 天空的新娘",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4134,
+        "name_en": "Dragon Quest VI (Japan)",
+        "name_cn": "勇者斗恶龙 6 - 幻之大地",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4135,
+        "name_en": "Dragon Quest VI - Realms of Revelation (Japan)",
+        "name_cn": "勇者斗恶龙 6 - 幻之大地",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4136,
+        "name_en": "Fire Emblem - Mystery of the Emblem (Japan)",
+        "name_cn": "火焰纹章 - 纹章之谜",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4137,
+        "name_en": "Go for it! Goemon - The Twinkling Journey - The Reason I became a Dancer (Japan)",
+        "name_cn": "大盗伍佑卫门 4 - 我成为舞者的理由",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4138,
+        "name_en": "Go for it! Goemon 2 - The Strange General McGuinness (Japan)",
+        "name_cn": "大盗伍佑卫门 2 - 奇天烈将军玛基尼斯",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4139,
+        "name_en": "Go for it! Goemon 3 - The Mecha Leg Hold of Jurokube Shishi (Japan)",
+        "name_cn": "大盗伍佑卫门 3 - 狮子重禄兵卫的卍字固",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4140,
+        "name_en": "King of Demons (Japan)",
+        "name_cn": "魔兽王",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4141,
+        "name_en": "Mobile Suit Gundam Wing - Endless Duel (Japan)",
+        "name_cn": "新机动战记高达 W - 无尽对决",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4142,
+        "name_en": "Mysterious Dungeon 2 - Shiren the Wanderer (Japan)",
+        "name_cn": "不可思议的迷宫 2 - 风来的西林",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4143,
+        "name_en": "Mystery Dungeon 2 - Shiren the Wanderer (Japan)",
+        "name_cn": "不可思议的迷宫 2 - 风来的西林",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4145,
+        "name_en": "Torneco no Daibouken - Fushigi no Dungeon (Japan)",
+        "name_cn": "特鲁内克大冒险 - 不可思议的迷宫",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4146,
+        "name_en": "Taloon's Great Adventure - Mystery Dungeon (Japan)",
+        "name_cn": "特鲁内克大冒险 - 不可思议的迷宫",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4147,
+        "name_en": "Violinist of Hameln, The (Japan)",
+        "name_cn": "魔法提琴手",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4148,
+        "name_en": "Taiwan 16 Mahjong II - Horoscope Girls Edition (China) [CHT]",
+        "name_cn": "十六张麻将 - 星座女郎篇",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4149,
+        "name_en": "Super Robot Taisen Gaiden - Masou Kishin - The Lord of Elemental (Japan) [CHS]",
+        "name_cn": "超级机器人大战外传 - 魔装机神 元素领主",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4150,
+        "name_en": "Super Big 2 (China) [CHT]",
+        "name_cn": "大老二",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4151,
+        "name_en": "Radical Dreamers - Nusume Nai Houseki (Japan) [CHS]",
+        "name_cn": "梦想家 - 盗不走的宝石",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4152,
+        "name_en": "Wonder Project J - Mechanical Boy Pino (USA) [CHS]",
+        "name_cn": "神奇 J 计划 - 机械少年匹诺",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4153,
+        "name_en": "Yadamon - Wonderland Dreams (Japan) [CHS]",
+        "name_cn": "小讨厌 - 梦幻仙境",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4154,
+        "name_en": "Clock Tower - Rewind (China) [CHS]",
+        "name_cn": "钟楼 - 倒带",
+        "status": "unmatched"
+      },
+      {
+        "row_number": 4155,
+        "name_en": "Sim Ant (Japan)",
+        "name_cn": "模拟蚂蚁",
+        "status": "unmatched"
+      }
+    ],
+    "multiple_translation_keys": [
+      "f-zero"
+    ],
+    "matched_rows_by_method": {
+      "exact_title": 3891,
+      "qualified_title": 208
+    }
+  },
+  "coverage": [
+    {
+      "dat_set_id": 1,
+      "status": "matched",
+      "n": 4255
+    },
+    {
+      "dat_set_id": 1,
+      "status": "unmatched",
+      "n": 63
+    },
+    {
+      "dat_set_id": 2,
+      "status": "matched",
+      "n": 4261
+    },
+    {
+      "dat_set_id": 2,
+      "status": "unmatched",
+      "n": 70
+    }
+  ],
+  "storage": {
+    "logical_content_bytes": 6555702354,
+    "historical_zip_bytes_not_stored": 4268501440,
+    "unique_raw_chunk_bytes": 4559182150,
+    "stored_chunk_bytes": 1593367096,
+    "header_body_recipes": 0,
+    "zip_plans": 4813,
+    "file_occurrences": 14069,
+    "catalog_objects": 9110
+  },
+  "solid_groups": {
+    "groups": 145,
+    "raw_bytes": 4547127366,
+    "stored_bytes": 1591582339
+  },
+  "audit": {
+    "integrity_check": [
+      "ok"
+    ],
+    "foreign_key_errors": [],
+    "objects_checked": 4297,
+    "archive_plans_checked": 4813,
+    "compression_groups_checked": 145,
+    "historical_zip_objects": 4813,
+    "errors": [],
+    "ok": true,
+    "seconds": 689
+  }
+}

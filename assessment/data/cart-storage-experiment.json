@@ -1,0 +1,91 @@
+{
+  "sample": "250 randomly chosen parent/clone families per platform (seed 2026); identical ROMs counted once",
+  "unit": "MiB",
+  "snes": {
+    "sample_zip": 443.2,
+    "sample_raw": 792.9,
+    "files": 552,
+    "strategies": {
+      "raw": 792.9,
+      "unique": 768.7,
+      "lzma_file": 387.0,
+      "zstd_file": 404.1,
+      "lzma_family_solid": 192.3,
+      "lzma_group_2M": 348.5,
+      "lzma_group_8M": 223.0,
+      "lzma_group_32M": 195.0,
+      "zstd_ref_parent": 212.1,
+      "zstd_ref_best": 206.1,
+      "lzma_ref_parent_est": 202.3,
+      "zip": 443.2
+    },
+    "nes_v3_engine_as_is": {
+      "stored": 218.8,
+      "sqlite_file": 238.9,
+      "note": "8 KiB blocks, XOR deltas, 2 MiB LZMA groups (real engine, import order)"
+    },
+    "family_groups": {
+      "B8K_C2M": 212.4,
+      "B8K_C16M": 189.1,
+      "B64K_C16M": 190.1,
+      "B64K_C32M": 189.8,
+      "B64K_C64M": 189.5,
+      "B1024K_C32M": 190.1
+    }
+  },
+  "megadrive": {
+    "sample_zip": 408.2,
+    "sample_raw": 833.1,
+    "files": 604,
+    "strategies": {
+      "raw": 833.1,
+      "unique": 740.7,
+      "lzma_file": 314.2,
+      "zstd_file": 337.6,
+      "lzma_family_solid": 151.2,
+      "lzma_group_2M": 279.7,
+      "lzma_group_8M": 192.0,
+      "lzma_group_32M": 155.6,
+      "zstd_ref_parent": 186.3,
+      "zstd_ref_best": 167.8,
+      "lzma_ref_parent_est": 172.6,
+      "zip": 408.2
+    },
+    "nes_v3_engine_as_is": {
+      "stored": 196.1,
+      "sqlite_file": 216.9,
+      "note": "same"
+    },
+    "family_groups": {
+      "B8K_C2M": 192.0,
+      "B8K_C16M": 146.7,
+      "B64K_C16M": 147.8,
+      "B64K_C32M": 144.5,
+      "B64K_C64M": 143.9
+    }
+  },
+  "block_metadata_estimate_MiB": {
+    "B8K": {
+      "snes": 8.6,
+      "megadrive": 9.0
+    },
+    "B64K": {
+      "snes": 1.2,
+      "megadrive": 1.2
+    }
+  },
+  "lzma_lc_lp_pb_relative_to_3_0_0": {
+    "snes": {
+      "0,0,0": 0.9986,
+      "3,0,2": 1.0005,
+      "0,1,1": 1.0012,
+      "4,0,0": 1.0021
+    },
+    "megadrive": {
+      "3,0,2": 0.9986,
+      "1,1,1": 1.0014,
+      "0,1,1": 1.0031
+    }
+  },
+  "decision": "64 KiB SHA256-deduplicated blocks packed in No-Intro family order into solid LZMA2 groups <=32 MiB (32 MiB dictionary, lc3 lp0 pb0, BT4, nice_len 273)"
+}

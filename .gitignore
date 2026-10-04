@@ -1,0 +1,9 @@
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+__pycache__/
+*.pyc
+.build-*/
+build-*.log
+dist/
