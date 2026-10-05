@@ -2,61 +2,57 @@
 
 English | [中文说明](README.zh-CN.md)
 
-A single-file SQLite archive design for Super Nintendo Entertainment System / Super Famicom preservation: exact ROM identities, deduplicated storage, DAT validation across No-Intro snapshots, dump provenance, internal-header metadata, RetroAchievements hash matching, English/Chinese names and checksummed TorrentZip export plans. It is the cartridge sibling of [RetroBoxDB-NES](https://github.com/rshi0212/RetroBoxDB-NES).
+Single-file SQLite preservation database for Super Nintendo Entertainment System / Super Famicom. The public Catalog holds metadata only (checksums, DAT and provenance records, header fields, archive recipes and the processing code); it contains no ROM data and cannot restore files. The populated database stays local.
 
-**The public Catalog contains no ROM bodies, original DAT/DB/Dumplog payloads, compressed content groups or media.** The populated database stays local. The Catalog keeps metadata, expected checksums, header fields, archive recipes, provenance and the processing source code; it cannot restore or export files.
-
-| Download / document | Purpose |
+| Item | Value |
 | --- | --- |
-| [RetroBoxDB.SNES.Catalog.sqlite](https://github.com/rshi0212/RetroBoxDB-SNES/releases/latest/download/RetroBoxDB.SNES.Catalog.sqlite) | Metadata-only SQLite (48 MiB), attached to GitHub Releases |
-| [Technical design](RetroBoxDB.Cartridge.Technical-Design.en.md) | Storage v4, adapters, incremental updates, RetroAchievements, verification |
-| [中文说明](RetroBoxDB.Cartridge.zh-CN.md) | Full Chinese guide for SNES and Mega Drive |
-| [RA coverage](reports/ra-snes-games.csv) / [summary](reports/ra-snes.json) | Every RetroAchievements game with achievements and its match status |
-| [Build report](reports/snes-build-report.json) | Import, scan, diff, No-Intro, packages, names and audit results |
+| Original size | 4,898 No-Intro ZIPs, 3.99 GiB; 4,898 ROM files, 6.97 GiB uncompressed |
+| Stored size | populated database 1.54 GiB; public Catalog 48.5 MiB (no ROM data) |
+| Ratio | 38.5% of the source ZIPs, 22.0% of the uncompressed ROM files |
+| Technology | storage v4: SHA256-deduplicated 64 KiB blocks packed in No-Intro family order into solid LZMA2 groups of up to 128 MiB (128 MiB dictionary); per-block SHA256 and per-object CRC32/MD5/SHA1/SHA256 verification; source ZIPs reproduced byte-for-byte from TorrentZip plans |
+| Export performance | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, idle, Python 3.14.4, all checks included. Whole-set export (4,898 ROM files in storage order, each group decoded once): 20.6 MiB/s, 71 ms per file on average; single file with a cold cache (the group is decoded up to the file): ROM 1.099 s, TorrentZip 1.402 s on average |
 
-## Collection
+## Downloads and documents
 
-| | |
+| File / document | Content |
 | --- | --- |
-| Local No-Intro ZIPs (incl. Aftermarket/Private) | 4,898 files, 3.99 GiB |
-| Populated database | 1.54 GiB (38.6% of the source ZIPs) |
+| [RetroBoxDB.SNES.Catalog.sqlite](https://github.com/rshi0212/RetroBoxDB-SNES/releases/latest/download/RetroBoxDB.SNES.Catalog.sqlite) | Public Catalog (Release asset with `SHA256SUMS`) |
+| [Storage v4 guide](RetroBoxDB.Storage-v4.en.md) / [中文](RetroBoxDB.Storage-v4.zh-CN.md) | Storage evaluation, contents, RA, names and maintenance for all six platforms |
+| [Technical design](RetroBoxDB.Storage-v4.Technical-Design.en.md) | Storage format, platform adapters, incremental updates, verification |
+| [RA list](reports/ra-snes-games.csv) / [summary](reports/ra-snes.json), [build report](reports/snes-build-report.json), [audit resolution](reports/audit-resolution-20261004.md) | Detailed data |
+
+## Storage choice and platform specifics
+
+Change against 32 MiB groups on real data (first 16 family-ordered groups, 484 MiB): 64 MiB −0.24%, 128 MiB −0.51%, 256 MiB −0.78%; 128 MiB chosen by the rule.
+
+- ROM sizes are 0.25–6 MiB; regional versions and revisions are similar but often shifted, so aligned XOR deltas (the NES v3 approach) catch little and a large LZMA2 dictionary over family-ordered data captures the redundancy.
+- Internal header: the location (LoROM 0x7FC0, HiROM 0xFFC0, ExLoROM, ExHiROM) is chosen by a score over checksum/complement, map mode, title, ROM-size byte and reset vector; below the threshold a dump stays `unclassified` (mostly betas, prototypes, pirate carts and enhancement-chip firmware). Map mode, FastROM, chipset and coprocessor, SRAM size, region, maker/game codes and both checksums are stored.
+- A 512-byte copier header (file size % 1024 = 512) would be cut off as its own block so the body deduplicates with headerless dumps, and the RA hash is computed after it; the local collection contains none.
+- Most RA games without a No-Intro counterpart are hacks, translation patches (for example the RA sets for Bahamut Lagoon and Rushing Beat use English-patched ROMs) and subsets.
+
+## Contents
+
+| Item | Value |
+| --- | --- |
 | ROM records / games / releases | 4,293 / 1,996 / 4,329 |
-| DAT 20260710-203222 coverage | 4,255/4,318 |
-| DAT 20261003-140326 coverage | 4,261/4,331 |
-| DAT diff (old → new) | 4,313 unchanged, 13 added, 5 renamed |
-| No-Intro DB Export + Dump Log 20261003-140326 | 4,365 archives, 5,457 file identities, 12,153 sources, 5,399 documented hardware assertions; Dump Log 1,871 Verified |
+| DAT coverage per version | 20260710-203222: 4,255/4,318; 20261003-140326: 4,261/4,331 |
+| Local ROMs in no DAT | 32 |
+| No-Intro DB Export + Dump Log 20261003-140326 | 4,365 archives, 5,457 file identities, 5,399 documented hardware assertions; Dump Log Verified 1,871 |
+| RetroAchievements (console 3) | 1,185 games with achievements: 673 with a local ROM (914 ROMs), 0 DAT only, 1 DB file only, 511 without a No-Intro counterpart |
+| Chinese names | 3,942 of 4,154 rows translated (2,030 unique); 3,909 local ROMs have a Chinese name |
+| Populated-database audit | 4,297 objects, 37 groups, 4,813 archive plans, all passed |
 
-## Storage chosen by measurement
+Every source ZIP is reproduced byte-for-byte from its TorrentZip plan (`v_file_checksums.exported_bytes_equal_source`).
 
-The NES layout (8 KiB blocks, XOR deltas, 2 MiB LZMA groups) was not copied blindly. A 10% random family sample compared seven strategies; SNES sample: 443 MiB ZIP → 239 MiB with the NES v3 engine → 191 MiB with storage v4 (−20%). Storage v4 deduplicates 64 KiB blocks by SHA256 and packs them in No-Intro family order (parent and clones together) into solid LZMA2 groups of at most 32 MiB. Here, 4.25 GiB of unique blocks are stored as 1.48 GiB in 145 groups. Every block keeps its own SHA256, every object is verified against CRC32/MD5/SHA1/SHA256, and the v3 engine refuses v4 files rather than misreading them. See [assessment/data/cart-storage-experiment.json](assessment/data/cart-storage-experiment.json).
-
-## RetroAchievements
-
-A snapshot of the public RA API (console 3) is stored in `ra_games` / `ra_hashes`; no credentials are stored. Each ROM's RA hash is computed with rcheevos rules. Of 1,185 RA games with achievements, **673 have a matching local ROM** (914 ROMs), **none is missing among games No-Intro lists**, 1 matches only a No-Intro DB bad dump, and 511 (440 hacks, 64 official sets that target translation patches or subsets).
-
-```sql
-SELECT * FROM v_rom_ra_matches WHERE has_achievements;
-SELECT * FROM v_dat_ra_matches WHERE has_achievements AND NOT local_rom_available;
-```
-
-## Names
-
-3,942 of 4,154 rows translated (2,030 unique names); 3,864 direct + 73 inherited releases; 3,909 local ROMs.
-
-```sql
-SELECT * FROM v_release_effective_chinese_names WHERE catalog_title LIKE '%Mario%';
-```
-
-## Using the Catalog
+## Usage
 
 ```bash
+# Query-only audit with the Catalog's embedded engine (also: stats, checksums FILE_ID, help)
 python3 -B -c 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); s=c.execute("SELECT content FROM resources WHERE name=?",("engine.py",)).fetchone()[0]; c.close(); exec(compile(s,"RetroBoxDB:engine.py","exec"))' ./RetroBoxDB.SNES.Catalog.sqlite audit
+# Populated database: export by DAT version, 1G1R, RA achievements, TorrentZip or plain ROMs
+python3 -B tools/export_set.py RetroBoxDB.SNES.sqlite OUT --set 1g1r --ra achievements --container torrentzip --layout ra-category
+# Add new DATs, DB Export / Dump Log snapshots, ROMs and an RA snapshot incrementally
+python3 -B tools/update_db.py RetroBoxDB.SNES.sqlite --discover --ra --catalog RetroBoxDB.SNES.Catalog.sqlite
 ```
 
-Replace `audit` with `stats`, `checksums FILE_ID` or `help`. The catalog engine is query-only and reports `payloads_verified=false`.
-
-## Building and growing your own database
-
-Python 3.10+ standard library only. `tools/build_cart_db.py snes FULL.sqlite --catalog CATALOG.sqlite` builds from local No-Intro inputs (read-only). `tools/update_cart_db.py FULL.sqlite --discover --ra --catalog CATALOG.sqlite` adds new DATs, DB Export/Dump Log snapshots and ROMs idempotently and repacks new revisions into their family's solid group. Tests: `python3 -B -m unittest tests/test_cart.py tests/test_game_names.py`.
-
-Audit of the populated database: 4,297 objects, 145 solid groups, 4,813 archive plans; SQLite integrity and foreign keys clean; no errors.
+Python 3.10+ standard library only. `engine.py` and the other `resources` entries are executable code; run them only from a database you built or a Release asset whose SHA256 you verified. Releases are produced by `.github/workflows/publish-catalog.yml`: it starts from the base Catalog pinned in `release/catalog-release.json`, injects the engine and documents of this commit, checks every data-table digest, runs the tests and the audit, then publishes.

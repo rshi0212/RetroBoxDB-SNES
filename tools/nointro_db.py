@@ -1,6 +1,6 @@
-"""No-Intro DB Export + Dumplog importer for cartridge platforms without NES-style file headers.
+"""No-Intro DB Export + Dumplog importer for platforms without NES-style file headers (SNES, Mega Drive, GB, GBC, GBA).
 
-Usage: python3 -B cart_nointro.py FULL.sqlite DB.zip DUMPLOG.zip
+Usage: python3 -B nointro_db.py FULL.sqlite DB.zip DUMPLOG.zip
 Derived from the NES importer (resource nointro.py). Differences: no 16-byte header
 reconstruction or Headered/Headerless pairing (SNES/MD DB files are all 'Default'
 format); SHA256 and extension may be absent in the export; the DB 'header' attribute
@@ -90,7 +90,7 @@ def import_snapshot(db, dbpath, logpath, progress=lambda text: None):
         if not a or a['title'] != r['Name']: raise ValueError('Dumplog/DB archive identity mismatch: ' + r['ID'])
     c.execute('SAVEPOINT nointro_import')
     try:
-        c.execute("INSERT OR REPLACE INTO meta VALUES ('nointro_extension_version','1-cart')")
+        c.execute("INSERT OR REPLACE INTO meta VALUES ('nointro_extension_version','1-generic')")
         old = c.execute('SELECT id FROM ni_snapshots WHERE db_sha256=? AND dumplog_sha256=?', (dh['sha256'], lh['sha256'])).fetchone()
         if old: c.execute('RELEASE nointro_import'); return {'snapshot_id': old[0], 'already_imported': True}
         src = db.insert('sources', title=f"No-Intro {platform['name']} DB Export and Dumplog", url='https://datomatic.no-intro.org/', version=parsed['version'], retrieved_at=now(), notes='Original snapshot identities retained; per-dump provenance is separate')
@@ -177,7 +177,7 @@ def import_snapshot(db, dbpath, logpath, progress=lambda text: None):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 4: raise SystemExit('Usage: cart_nointro.py FULL.sqlite DB.zip DUMPLOG.zip')
+    if len(sys.argv) != 4: raise SystemExit('Usage: nointro_db.py FULL.sqlite DB.zip DUMPLOG.zip')
     db = DB(sys.argv[1])
     try:
         with db.c: result = import_snapshot(db, sys.argv[2], sys.argv[3], lambda s: print(s, file=sys.stderr, flush=True))

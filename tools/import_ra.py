@@ -1,4 +1,4 @@
-"""Import a RetroAchievements game/hash snapshot (public Web API) into a cartridge RetroBoxDB.
+"""Import a RetroAchievements game/hash snapshot (public Web API) into a storage-v4 RetroBoxDB.
 
 python3 -B tools/import_ra.py FULL.sqlite [--response saved.json]
 The API key is read from $RETROACHIEVEMENTS_API_KEY or ~/Sync/API_TOKEN/retroachievements.md
@@ -7,7 +7,7 @@ and is never written to the database, reports or logs. The stored resource is th
 import argparse, datetime, hashlib, json, os, pathlib, re, sqlite3, sys, urllib.parse, urllib.request
 
 ENDPOINT = 'https://retroachievements.org/API/API_GetGameList.php'
-CONSOLES = {'snes': 3, 'megadrive': 1, 'nes': 7}
+CONSOLES = {'snes': 3, 'megadrive': 1, 'nes': 7, 'gb': 4, 'gbc': 6, 'gba': 5}
 TOKEN_FILE = pathlib.Path('~/Sync/API_TOKEN/retroachievements.md').expanduser()
 
 

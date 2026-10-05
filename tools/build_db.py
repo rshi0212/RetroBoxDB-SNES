@@ -1,6 +1,6 @@
 """Build a populated RetroBoxDB (storage v4) for SNES or Mega Drive, plus its payload-free Catalog.
 
-python3 -B tools/build_cart_db.py {snes|megadrive} OUT.sqlite [--catalog OUT.Catalog.sqlite]
+python3 -B tools/build_db.py {snes|megadrive} OUT.sqlite [--catalog OUT.Catalog.sqlite]
         [--limit-families N] [--workers N] [--skip-audit]
 
 Inputs (read-only): No-Intro Parent-Clone DATs (all versions found), DB Export + Dump Log,
@@ -8,18 +8,39 @@ ROM ZIPs under /mnt/MyShare/No-Intro, and the English/Chinese name CSV.
 Never modifies inputs; refuses to replace an existing output database.
 """
 import argparse, collections, concurrent.futures as cf, hashlib, importlib, io, json, os, pathlib, re, sqlite3, sys, time, zipfile, zlib
+import xml.etree.ElementTree as ET
 
 TOOLS = pathlib.Path(__file__).resolve().parent
 ROOT = TOOLS.parent
 DATFILES = pathlib.Path('~/Sync/Datfiles').expanduser()
 NOINTRO = pathlib.Path('/mnt/MyShare/No-Intro')
+MIB = 1 << 20
+# Storage parameters were chosen per platform from sampled measurements (assessment/data/storage-experiment-snes-md*.json):
+# block = dedup block size, solid = group cap, dictionary = LZMA2 dictionary (>= group cap), workers = encoder processes.
 PLATFORMS = {
+    # NES was built by its own historical pipeline (header reconstruction, DB/Dumplog pairing) and migrated to v4 with
+    # tools/migrate_v4.py; it is listed for incremental updates and documentation only, never built from scratch here.
+    'nes': dict(label='NES', name='Nintendo Entertainment System / Famicom', nointro='Nintendo - Nintendo Entertainment System', batocera='nes',
+                names=ROOT / 'data' / 'Nintendo - Nintendo Entertainment System.csv', block=8192, solid=256 * MIB, dictionary=256 * MIB, workers=2,
+                scratch_build=False, dat_globs=('Nintendo - Nintendo Entertainment System (Headered) (Parent-Clone) (*).zip',
+                                                'Nintendo - Nintendo Entertainment System (Headerless) (Parent-Clone) (*).zip')),
     'snes': dict(label='SNES', name='Super Nintendo Entertainment System / Super Famicom',
                  nointro='Nintendo - Super Nintendo Entertainment System', batocera='snes',
-                 names=ROOT / 'data' / 'Nintendo - Super Nintendo Entertainment System.csv'),
+                 names=ROOT / 'data' / 'Nintendo - Super Nintendo Entertainment System.csv',
+                 block=65536, solid=128 * MIB, dictionary=128 * MIB, workers=4),
     'megadrive': dict(label='MegaDrive', name='Sega Mega Drive / Genesis',
                       nointro='Sega - Mega Drive - Genesis', batocera='megadrive',
-                      names=ROOT / 'data' / 'Sega - Mega Drive - Genesis.csv'),
+                      names=ROOT / 'data' / 'Sega - Mega Drive - Genesis.csv',
+                      block=65536, solid=256 * MIB, dictionary=256 * MIB, workers=2),
+    'gb': dict(label='GB', name='Nintendo Game Boy', nointro='Nintendo - Game Boy', batocera='gb',
+               names=ROOT / 'data' / 'Nintendo - Game Boy.csv',
+               block=65536, solid=256 * MIB, dictionary=256 * MIB, workers=2),
+    'gbc': dict(label='GBC', name='Nintendo Game Boy Color', nointro='Nintendo - Game Boy Color', batocera='gbc',
+                names=ROOT / 'data' / 'Nintendo - Game Boy Color.csv',
+                block=65536, solid=256 * MIB, dictionary=256 * MIB, workers=2),
+    'gba': dict(label='GBA', name='Nintendo Game Boy Advance', nointro='Nintendo - Game Boy Advance', batocera='gba',
+                names=ROOT / 'data' / 'Nintendo - Game Boy Advance.csv',
+                block=1048576, solid=256 * MIB, dictionary=256 * MIB, workers=2),
 }
 SOURCE_DOCS = [
     ('No-Intro DAT-o-MATIC', 'https://datomatic.no-intro.org/', 'Parent-Clone DATs, DB Export and Dump Log snapshots as supplied locally; each snapshot is retained.'),
@@ -38,20 +59,46 @@ def latest(paths):
     return sorted(paths, key=stamp)
 
 
+STAMP = re.compile(r'\((\d{8}-\d{6})\)')
+
+
+def by_stamp(paths):
+    """{timestamp: path} for No-Intro artifacts; files without a (YYYYMMDD-HHMMSS) stamp raise instead of being guessed."""
+    out = {}
+    for p in paths:
+        m = STAMP.search(p.name)
+        if not m: raise SystemExit(f'No-Intro file without a version timestamp: {p.name}')
+        if m[1] in out: raise SystemExit(f'Two files share timestamp {m[1]}: {out[m[1]].name}, {p.name}')
+        out[m[1]] = p
+    return out
+
+
+def load_engine_file(path):
+    """Pool initializer: load the generated engine from an explicit file as module 'engine' (never via sys.path lookup)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('engine', path); mod = importlib.util.module_from_spec(spec)
+    sys.modules['engine'] = mod; spec.loader.exec_module(mod)
+
+
+def engine_pool(workers, eng):
+    """Process pool whose workers run exactly the engine module `eng` (its encode_solid and torrentzip_hashes)."""
+    return cf.ProcessPoolExecutor(max_workers=workers, initializer=load_engine_file, initargs=(eng.__file__,))
+
+
 def combined_engine():
     base = (TOOLS / 'base' / 'engine.py').read_text()
     guard = "\nif __name__=='__main__': main(sys.argv[1],sys.argv[2:])\n"
     if not base.endswith(guard): raise ValueError('Unexpected base engine ending')
-    body = base[:-len(guard)] + '\n\n' + (TOOLS / 'cart_headers.py').read_text() + '\n\n' + (TOOLS / 'cart_engine.py').read_text()
+    body = base[:-len(guard)] + '\n\n' + (TOOLS / 'rom_headers.py').read_text() + '\n\n' + (TOOLS / 'engine_v4.py').read_text()
     return body + guard, body
 
 
-def cart_schema(platform):
+def schema_v4(platform):
     s = (TOOLS / 'base' / 'schema.sql').read_text()
     reps = [
         ('PRAGMA user_version=3;', 'PRAGMA user_version=4;'),
         (" size INTEGER NOT NULL CHECK(size>0 AND size<=2097152),\n codec TEXT NOT NULL CHECK(codec='lzma2-4m'),",
-         " size INTEGER NOT NULL CHECK(size>0 AND size<=33554432 AND (codec='lzma2-solid' OR size<=2097152)),\n codec TEXT NOT NULL CHECK(codec IN ('lzma2-4m','lzma2-solid')),"),
+         f" size INTEGER NOT NULL CHECK(size>0 AND size<={PLATFORMS[platform]['solid']} AND (codec='lzma2-solid' OR size<=2097152)),\n codec TEXT NOT NULL CHECK(codec IN ('lzma2-4m','lzma2-solid')),"),
         (" sha1 TEXT NOT NULL CHECK(length(sha1)=40),sha256 TEXT NOT NULL CHECK(length(sha256)=64),\n bad INTEGER",
          " sha1 TEXT NOT NULL CHECK(length(sha1)=40),sha256 TEXT CHECK(sha256 IS NULL OR length(sha256)=64),\n bad INTEGER"),
         ("INSERT INTO frontend_platforms VALUES ('batocera','nes','nes','screenscraper',NULL);",
@@ -60,7 +107,7 @@ def cart_schema(platform):
     for old, new in reps:
         if s.count(old) != 1: raise ValueError('Schema transform anchor not found: ' + old[:50])
         s = s.replace(old, new)
-    return s + '\n' + (TOOLS / 'cart_schema.sql').read_text()
+    return s + '\n' + (TOOLS / 'schema_v4.sql').read_text()
 
 
 def create(path, platform, schema):
@@ -68,17 +115,17 @@ def create(path, platform, schema):
     c = sqlite3.connect(path)
     c.execute('PRAGMA page_size=16384'); c.execute('PRAGMA journal_mode=DELETE'); c.execute('PRAGMA synchronous=FULL')
     c.executescript(schema)
-    stamp = datetime_now()
+    stamp = datetime_now(); cfg = PLATFORMS[platform]
     with c:
         c.executemany('INSERT INTO meta VALUES (?,?)', [
             ('name', 'RetroBoxDB'), ('schema_version', '4'), ('created_at', stamp), ('platform', platform),
             ('scope', f"{PLATFORMS[platform]['name']}; no ROM or source archive deletions"),
-            ('nes_block_size', '65536'), ('rom_block_size', '65536'),
+            ('nes_block_size', str(cfg['block'])), ('rom_block_size', str(cfg['block'])),
             ('execution', 'Python standard-library engine stored in resources; SQLite alone does not execute Python'),
             ('archive_policy', 'All original archive checksums retained as historical identity; export re-packs and verifies separate canonical output checksums; no ZIP payloads retained'),
             ('journal_policy', 'DELETE + synchronous FULL; one persistent SQLite file'),
-            ('storage', 'SHA256 64 KiB block dedup; family-ordered solid LZMA2 groups up to 32 MiB (32 MiB dictionary); export-only ZIP plans'),
-            ('solid_group_max_bytes', str(32 << 20)), ('solid_group_dictionary_bytes', str(32 << 20)), ('solid_group_cache_bytes', str(96 << 20)),
+            ('storage', f"SHA256 {cfg['block'] // 1024} KiB block dedup; family-ordered solid LZMA2 groups up to {cfg['solid'] // MIB} MiB ({cfg['dictionary'] // MIB} MiB dictionary); export-only ZIP plans"),
+            ('solid_group_max_bytes', str(cfg['solid'])), ('solid_group_dictionary_bytes', str(cfg['dictionary'])), ('solid_group_cache_bytes', str(max(96 * MIB, 2 * cfg['solid']))),
             ('compression_group_max_bytes', '2097152'), ('compression_group_dictionary_bytes', '4194304'), ('compression_group_cache_bytes', '16777216'),
             ('frontend_extension_version', '1'), ('frontend_scraping_state', 'placeholders only; no fetched metadata, media or API credentials'),
         ])
@@ -109,7 +156,7 @@ def family_index(eng, platform, dat_paths, db_export):
             for r in g.findall('rom'):
                 index.setdefault((r.get('crc').lower(), int(r.get('size'))), top(g.get('name')))
         if p == dat_paths[-1] and db_export:
-            nointro = importlib.import_module('cart_nointro')
+            nointro = importlib.import_module('nointro_db')
             _, raw, _ = nointro.read_input(db_export); parsed = nointro.parse_export(raw)
             arch = parsed['archives']
             for s in parsed['sources']:
@@ -125,10 +172,13 @@ def base_title(name): return '~' + re.sub(r'\s*\(.*$', '', name).strip().casefol
 
 def import_roms(db, eng, platform, index, workers, limit_families=None):
     dirs = sorted(p for p in NOINTRO.iterdir() if p.is_dir() and (p.name == PLATFORMS[platform]['nointro'] or p.name.startswith(PLATFORMS[platform]['nointro'] + ' (')))
-    families = collections.defaultdict(list); stats = collections.Counter()
+    families = collections.defaultdict(list); stats = collections.Counter(); sidecars = []
     for d in dirs:
         for p in sorted(d.iterdir()):
-            if p.suffix.lower() != '.zip': stats['non_zip_skipped'] += 1; continue
+            if p.suffix.lower() != '.zip':
+                if p.is_file(): sidecars.append(p)  # e.g. frontend metadata.txt / systeminfo.txt: kept as metadata files
+                else: stats['non_file_skipped'] += 1
+                continue
             with zipfile.ZipFile(p) as z:
                 keys = [index.get((f'{i.CRC:08x}', i.file_size)) for i in z.infolist() if not i.is_dir()]
             key = next((k for k in keys if k), None)
@@ -138,8 +188,8 @@ def import_roms(db, eng, platform, index, workers, limit_families=None):
     if limit_families: keys = keys[:limit_families]
     log('ROM directories', [d.name for d in dirs], 'families', len(keys), dict(stats))
     errors = []; pending_shas = set(); counters = collections.Counter()
-    pool = cf.ProcessPoolExecutor(max_workers=workers)
-    limit = eng.SOLID_LIMIT
+    pool = engine_pool(workers, eng)
+    limit = db.solid_limit
 
     # A batch is a run of whole families whose new blocks fill <=1 group (large families: several groups).
     def batches():
@@ -193,7 +243,7 @@ def import_roms(db, eng, platform, index, workers, limit_families=None):
         db.clear_caches()
 
     for cur, cur_blocks in batches():
-        group_jobs = [((blocks, gfams), pool.submit(eng.encode_solid, b''.join(b for _, b in blocks))) for blocks, gfams in groups_of(cur_blocks)]
+        group_jobs = [((blocks, gfams), pool.submit(eng.encode_solid, b''.join(b for _, b in blocks), db.solid_dict)) for blocks, gfams in groups_of(cur_blocks)]
         zip_jobs = []
         for key, fam in cur:
             for p, raw, members, names in fam:
@@ -204,10 +254,20 @@ def import_roms(db, eng, platform, index, workers, limit_families=None):
             log('progress zips', counters['zips'], 'groups', counters['groups'], 'raw MiB', counters['raw_group_bytes'] >> 20, 'stored MiB', counters['stored_group_bytes'] >> 20, 'elapsed', round(time.time() - start))
     while inflight: finish(inflight.popleft())
     pool.shutdown()
+    with db.c: counters['sidecar_files'] = store_sidecars(db, sidecars)
     result = {'directories': [str(d) for d in dirs], 'families': len(keys), 'family_assignment': dict(stats), 'errors': errors, **counters, 'seconds': round(time.time() - start)}
     with db.c: db.event('initial_collection_import', **result)
     log('ROM import done', json.dumps({k: v for k, v in result.items() if k != 'errors'}), 'errors', len(errors))
     return result
+
+
+def store_sidecars(db, paths):
+    """Store non-ZIP files found beside the ROM archives as 'metadata' files (not ROMs); idempotent by bytes and path."""
+    n = 0
+    for p in paths:
+        if p.stat().st_size > 64 * 1024 * 1024: raise ValueError(f'Unexpected large sidecar file: {p}')
+        oid = db.put(p.read_bytes()); db.file(oid, p.name, 'metadata', str(p)); n += 1
+    return n
 
 
 def build_catalog_records(db, new_ds, old_sets):
@@ -221,7 +281,7 @@ def build_catalog_records(db, new_ds, old_sets):
         while root['cloneof'] in by_name and root['cloneof'] not in visited: visited.add(root['name']); root = by_name[root['cloneof']]
         if root['name'] not in game_ids:
             game_ids[root['name']] = db.insert('games', platform_id=1, title=root['name'], metadata_json=js({'catalog_source': 'No-Intro parent/clone, not independent scraped identification', 'dat_game_id': root['id']}))
-        rel = [{'name': e.get('name'), 'region': e.get('region')} for e in __import__('xml.etree.ElementTree', fromlist=['x']).fromstring(g['raw_xml']).findall('release')]
+        rel = [{'name': e.get('name'), 'region': e.get('region')} for e in ET.fromstring(g['raw_xml']).findall('release')]
         release_of[g['id']] = db.insert('releases', game_id=game_ids[root['name']], title=g['name'], metadata_json=js({'dat_game_id': g['id'], 'source': f'No-Intro DAT {new_ver}; release fields unguessed', 'dat_release_elements': rel}))
         db.insert('release_dat_games', release_id=release_of[g['id']], dat_game_id=g['id'])
     # Older DAT games join the release whose newer DAT entry is the same ROM (diff: unchanged/renamed/case_changed/checksum_changed).
@@ -240,10 +300,10 @@ def build_catalog_records(db, new_ds, old_sets):
 def build_packages(db, dat_sets):
     c = db.c; counts = {}; errors = []
     for ds in dat_sets:
+        # package() matches members by object checksums, so no payload locality ordering is needed.
         rows = c.execute('''SELECT dg.id FROM dat_games dg WHERE dg.dat_set_id=? AND EXISTS(SELECT 1 FROM dat_roms dr WHERE dr.dat_game_id=dg.id)
             AND NOT EXISTS(SELECT 1 FROM dat_roms dr WHERE dr.dat_game_id=dg.id AND NOT EXISTS(SELECT 1 FROM validations v WHERE v.dat_rom_id=dr.id AND v.status='match'))
-            ORDER BY (SELECT min(c2.group_id) FROM dat_roms dr JOIN validations v ON v.dat_rom_id=dr.id AND v.status='match'
-                      JOIN object_chunks oc ON oc.object_id=v.checked_object_id JOIN chunks c2 ON c2.id=oc.chunk_id WHERE dr.dat_game_id=dg.id),dg.id''', (ds,)).fetchall()
+            ORDER BY dg.id''', (ds,)).fetchall()
         n = 0
         for i in range(0, len(rows), 200):
             with c:
@@ -255,6 +315,12 @@ def build_packages(db, dat_sets):
                     finally: c.execute('RELEASE package')
         counts[ds] = n; log('packages', ds, n, '/', len(rows))
     return {'packages_by_dat_set': counts, 'errors': errors}
+
+
+def checkpoint(work, report, stage):
+    """Persist the report after each stage so an interrupted build keeps its evidence (build-report.partial.json)."""
+    report.setdefault('completed_stages', []).append(stage)
+    (work / 'build-report.partial.json').write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str))
 
 
 def put_resource(c, name, kind, content):
@@ -269,9 +335,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('platform', choices=sorted(PLATFORMS)); ap.add_argument('out', type=pathlib.Path)
     ap.add_argument('--catalog', type=pathlib.Path); ap.add_argument('--limit-families', type=int)
-    ap.add_argument('--workers', type=int, default=6); ap.add_argument('--skip-audit', action='store_true')
+    ap.add_argument('--workers', type=int); ap.add_argument('--skip-audit', action='store_true')
     ap.add_argument('--work', type=pathlib.Path, help='directory for the generated engine.py (default: next to OUT)')
     args = ap.parse_args(); t0 = time.time(); plat = args.platform; cfg = PLATFORMS[plat]
+    if cfg.get('scratch_build') is False: raise SystemExit(f'{plat} is not built from scratch by this tool (see tools/migrate_v4.py and tools/update_db.py)')
+    args.workers = args.workers or cfg['workers']
     work = (args.work or args.out.parent / ('.build-' + plat)).resolve(); work.mkdir(parents=True, exist_ok=True)
     engine_text, engine_body = combined_engine()
     (work / 'engine.py').write_text(engine_text)
@@ -279,8 +347,8 @@ def main():
     catalog_engine.write_text(engine_body + '\n\n' + (TOOLS / 'base' / 'catalog_wrapper.py').read_text())
     sys.path[:0] = [str(work), str(TOOLS)]
     eng = importlib.import_module('engine')
-    for m in ('cart_nointro', 'import_game_names'): sys.modules.pop(m, None)
-    schema = cart_schema(plat)
+    for m in ('nointro_db', 'import_game_names'): sys.modules.pop(m, None)
+    schema = schema_v4(plat)
     create(args.out, plat, schema)
     db = eng.DB(args.out)
     report = {'platform': plat, 'started_at': datetime_now(), 'engine_version': eng.VERSION}
@@ -294,53 +362,62 @@ def main():
     report['dat_sets'] = [dict(r) for r in db.c.execute('SELECT id,name,version FROM dat_sets ORDER BY id')]
 
     index = family_index(eng, plat, dats, dbx[-1] if dbx else None)
+    checkpoint(work, report, 'dat_import')
     report['rom_import'] = import_roms(db, eng, plat, index, args.workers, args.limit_families)
+    checkpoint(work, report, 'rom_import')
 
     with db.c:
         report['scan'] = {ds: db.scan(ds) for ds in dat_sets}
         report['dat_diff'] = {f'{a}->{dat_sets[-1]}': eng.dat_diff(db, a, dat_sets[-1]) for a in dat_sets[:-1]}
         report['catalog'] = build_catalog_records(db, dat_sets[-1], dat_sets[:-1])
     log('scan/diff/catalog', json.dumps({k: report[k] for k in ('scan', 'dat_diff', 'catalog')}))
+    checkpoint(work, report, 'scan_diff_catalog')
 
     if dbx and dlog:
-        nointro = importlib.import_module('cart_nointro')
+        nointro = importlib.import_module('nointro_db')
         with db.c: report['nointro'] = nointro.import_snapshot(db, dbx[-1], dlog[-1], lambda s: log(s))
         report['nointro'].pop('checksums', None); log('nointro', json.dumps(report['nointro']))
 
+    checkpoint(work, report, 'nointro')
     report['packages'] = build_packages(db, dat_sets)
+    checkpoint(work, report, 'packages')
 
     ra = importlib.import_module('import_ra')
     try:
         raw = ra.fetch(ra.CONSOLES[plat])
         with db.c: report['retroachievements'] = ra.import_snapshot(db.c, plat, raw, datetime_now())
         log('retroachievements', json.dumps(report['retroachievements'], ensure_ascii=False))
-    except SystemExit as e:
+    except (SystemExit, Exception) as e:  # RA is an extension: record and continue
         report['retroachievements'] = {'error': str(e)}; log('retroachievements FAILED', e)
 
+    checkpoint(work, report, 'retroachievements')
     if cfg['names'].exists():
         names = importlib.import_module('import_game_names')
-        data = cfg['names'].read_bytes(); names.read_csv(data)
+        data = cfg['names'].read_bytes()
         db.c.execute('BEGIN IMMEDIATE')
-        try: report['game_names'] = names.import_names(db.c, data, cfg['names'].name, plat); db.c.commit()
-        except BaseException: db.c.rollback(); raise
-        log('names', json.dumps(report['game_names'], ensure_ascii=False)[:600])
+        try:
+            names.read_csv(data); report['game_names'] = names.import_names(db.c, data, cfg['names'].name, plat); db.c.commit()
+            log('names', json.dumps(report['game_names'], ensure_ascii=False)[:600])
+        except Exception as e:  # names are an extension: record and continue so storage, audit and Catalog still complete
+            db.c.rollback(); report['game_names'] = {'error': repr(e)}; log('names FAILED', repr(e))
+    checkpoint(work, report, 'game_names')
 
     with db.c:
-        db.c.execute("INSERT OR REPLACE INTO meta VALUES ('nointro_extension_version','1-cart')")
+        db.c.execute("INSERT OR REPLACE INTO meta VALUES ('nointro_extension_version','1-generic')")
         res = {'engine.py': ('python', engine_text), 'schema.sql': ('sql', schema),
-               'cart_schema.sql': ('sql', (TOOLS / 'cart_schema.sql').read_text()),
-               'cart_headers.py': ('python', (TOOLS / 'cart_headers.py').read_text()),
-               'cart_engine.py': ('python', (TOOLS / 'cart_engine.py').read_text()),
-               'cart_nointro.py': ('python', (TOOLS / 'cart_nointro.py').read_text()),
+               'schema_v4.sql': ('sql', (TOOLS / 'schema_v4.sql').read_text()),
+               'rom_headers.py': ('python', (TOOLS / 'rom_headers.py').read_text()),
+               'engine_v4.py': ('python', (TOOLS / 'engine_v4.py').read_text()),
+               'nointro_db.py': ('python', (TOOLS / 'nointro_db.py').read_text()),
                'import_ra.py': ('python', (TOOLS / 'import_ra.py').read_text()),
                'import_game_names.py': ('python', (TOOLS / 'import_game_names.py').read_text()),
                'game_names_schema.sql': ('sql', (TOOLS / 'game_names_schema.sql').read_text()),
-               'build_cart_db.py': ('python', (TOOLS / 'build_cart_db.py').read_text()),
+               'build_db.py': ('python', (TOOLS / 'build_db.py').read_text()),
                'build_catalog.py': ('python', (TOOLS / 'base' / 'build_catalog.py').read_text()),
                'catalog_wrapper.py': ('python', (TOOLS / 'base' / 'catalog_wrapper.py').read_text()),
                'seed.json': ('json', (TOOLS / 'base' / 'seed.json').read_text())}
-        for p in (ROOT / 'tests' / 'test_cart.py', ROOT / 'RetroBoxDB.Cartridge.Technical-Design.en.md', ROOT / 'RetroBoxDB.Cartridge.zh-CN.md'):
-            if p.exists(): res[{'.py': 'tests_cart.py', '.md': 'TECHNICAL-DESIGN.en' if '.en.' in p.name else 'README.zh-CN'}[p.suffix]] = ('python' if p.suffix == '.py' else 'markdown', p.read_text())
+        for p in (ROOT / 'tests' / 'test_v4.py', ROOT / 'RetroBoxDB.Storage-v4.Technical-Design.en.md', ROOT / 'RetroBoxDB.Storage-v4.zh-CN.md'):
+            if p.exists(): res[{'.py': 'tests_v4.py', '.md': 'TECHNICAL-DESIGN.en' if '.en.' in p.name else 'README.zh-CN'}[p.suffix]] = ('python' if p.suffix == '.py' else 'markdown', p.read_text())
         for name, (kind, content) in res.items(): put_resource(db.c, name, kind, content)
     db.c.execute('VACUUM')
     if not args.skip_audit:

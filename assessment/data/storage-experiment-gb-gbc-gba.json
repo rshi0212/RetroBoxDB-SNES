@@ -1,0 +1,258 @@
+{
+  "sample": {
+    "gb": "300 of 1,596 families (~19%), 481 files, 123.0 MiB raw, 48.9 MiB ZIP",
+    "gbc": "300 of 1,644 families (~18%), 539 files, 682.4 MiB raw, 206.5 MiB ZIP",
+    "gba": "60 of 1,987 families (~3%), 127 files, 1,253.5 MiB raw, 602.8 MiB ZIP"
+  },
+  "seed": 2026,
+  "unit": "MiB",
+  "meta_MiB_est": "approx. 90 bytes per stored block + 40 bytes per block reference",
+  "rule": "pick the smallest total (stored + block metadata); prefer the smaller group when a larger one saves < 0.5%",
+  "results": {
+    "gb": [
+      {
+        "config": "per_file_lzma",
+        "MiB": 39.4,
+        "zip_MiB": 48.9,
+        "raw_MiB": 123.0,
+        "unique_files_MiB": 104.9,
+        "s": 7
+      },
+      {
+        "config": "B8K_C2M",
+        "MiB": 26.6,
+        "unique_MiB": 75.7,
+        "groups": 44,
+        "blocks": 9690,
+        "block_refs": 13494,
+        "meta_MiB_est": 1.35,
+        "max_group_MiB": 2.0,
+        "s": 6
+      },
+      {
+        "config": "B16K_C2M",
+        "MiB": 26.8,
+        "unique_MiB": 80.7,
+        "groups": 46,
+        "blocks": 5168,
+        "block_refs": 6748,
+        "meta_MiB_est": 0.7,
+        "max_group_MiB": 2.0,
+        "s": 6
+      },
+      {
+        "config": "B16K_C8M",
+        "MiB": 26.2,
+        "unique_MiB": 80.7,
+        "groups": 11,
+        "blocks": 5168,
+        "block_refs": 6748,
+        "meta_MiB_est": 0.7,
+        "max_group_MiB": 8.0,
+        "s": 8
+      },
+      {
+        "config": "B16K_C16M",
+        "MiB": 26.0,
+        "unique_MiB": 80.7,
+        "groups": 6,
+        "blocks": 5168,
+        "block_refs": 6748,
+        "meta_MiB_est": 0.7,
+        "max_group_MiB": 15.9,
+        "s": 9
+      },
+      {
+        "config": "B16K_C32M",
+        "MiB": 25.8,
+        "unique_MiB": 80.7,
+        "groups": 3,
+        "blocks": 5168,
+        "block_refs": 6748,
+        "meta_MiB_est": 0.7,
+        "max_group_MiB": 31.8,
+        "s": 16
+      },
+      {
+        "config": "B64K_C16M",
+        "MiB": 26.1,
+        "unique_MiB": 90.0,
+        "groups": 6,
+        "blocks": 1464,
+        "block_refs": 1711,
+        "meta_MiB_est": 0.19,
+        "max_group_MiB": 15.9,
+        "s": 9
+      },
+      {
+        "config": "B64K_C32M",
+        "MiB": 25.9,
+        "unique_MiB": 90.0,
+        "groups": 3,
+        "blocks": 1464,
+        "block_refs": 1711,
+        "meta_MiB_est": 0.19,
+        "max_group_MiB": 32.0,
+        "s": 15
+      },
+      {
+        "config": "nes_v3_engine_as_is",
+        "stored_MiB": 27.9,
+        "sqlite_file_MiB": 31.6,
+        "note": "8 KiB blocks, XOR deltas, 2 MiB LZMA groups (real engine)"
+      }
+    ],
+    "gbc": [
+      {
+        "config": "per_file_lzma",
+        "MiB": 158.3,
+        "zip_MiB": 206.5,
+        "raw_MiB": 682.4,
+        "unique_files_MiB": 631.4,
+        "s": 55
+      },
+      {
+        "config": "B16K_C2M",
+        "MiB": 119.5,
+        "unique_MiB": 426.1,
+        "groups": 258,
+        "blocks": 27273,
+        "block_refs": 40413,
+        "meta_MiB_est": 3.88,
+        "max_group_MiB": 2.0,
+        "s": 41
+      },
+      {
+        "config": "B16K_C16M",
+        "MiB": 103.5,
+        "unique_MiB": 426.1,
+        "groups": 29,
+        "blocks": 27273,
+        "block_refs": 40413,
+        "meta_MiB_est": 3.88,
+        "max_group_MiB": 16.0,
+        "s": 44
+      },
+      {
+        "config": "B16K_C32M",
+        "MiB": 102.8,
+        "unique_MiB": 426.1,
+        "groups": 15,
+        "blocks": 27273,
+        "block_refs": 40413,
+        "meta_MiB_est": 3.88,
+        "max_group_MiB": 31.9,
+        "s": 47
+      },
+      {
+        "config": "B64K_C16M",
+        "MiB": 105.1,
+        "unique_MiB": 475.9,
+        "groups": 35,
+        "blocks": 7616,
+        "block_refs": 10105,
+        "meta_MiB_est": 1.04,
+        "max_group_MiB": 16.0,
+        "s": 50
+      },
+      {
+        "config": "B64K_C32M",
+        "MiB": 103.2,
+        "unique_MiB": 475.9,
+        "groups": 16,
+        "blocks": 7616,
+        "block_refs": 10105,
+        "meta_MiB_est": 1.04,
+        "max_group_MiB": 32.0,
+        "s": 53
+      },
+      {
+        "config": "B64K_C64M",
+        "MiB": 102.9,
+        "unique_MiB": 475.9,
+        "groups": 8,
+        "blocks": 7616,
+        "block_refs": 10105,
+        "meta_MiB_est": 1.04,
+        "max_group_MiB": 64.0,
+        "s": 70
+      },
+      {
+        "config": "nes_v3_engine_as_is",
+        "stored_MiB": 115.0,
+        "sqlite_file_MiB": 126.7,
+        "note": "8 KiB blocks, XOR deltas, 2 MiB LZMA groups (real engine)"
+      }
+    ],
+    "gba": [
+      {
+        "config": "per_file_lzma",
+        "MiB": 513.2,
+        "zip_MiB": 602.8,
+        "raw_MiB": 1253.5,
+        "unique_files_MiB": 1249.5,
+        "s": 302
+      },
+      {
+        "config": "B64K_C32M",
+        "MiB": 295.4,
+        "unique_MiB": 991.1,
+        "groups": 39,
+        "blocks": 15860,
+        "block_refs": 19995,
+        "meta_MiB_est": 2.12,
+        "max_group_MiB": 32.0,
+        "s": 175
+      },
+      {
+        "config": "B64K_C64M",
+        "MiB": 242.3,
+        "unique_MiB": 991.1,
+        "groups": 21,
+        "blocks": 15860,
+        "block_refs": 19995,
+        "meta_MiB_est": 2.12,
+        "max_group_MiB": 64.0,
+        "s": 236
+      },
+      {
+        "config": "B64K_C128M",
+        "MiB": 227.9,
+        "unique_MiB": 991.1,
+        "groups": 10,
+        "blocks": 15860,
+        "block_refs": 19995,
+        "meta_MiB_est": 2.12,
+        "max_group_MiB": 125.3,
+        "s": 334
+      },
+      {
+        "config": "B1024K_C128M",
+        "MiB": 227.9,
+        "unique_MiB": 1040.5,
+        "groups": 10,
+        "blocks": 1043,
+        "block_refs": 1252,
+        "meta_MiB_est": 0.14,
+        "max_group_MiB": 126.0,
+        "s": 257
+      },
+      {
+        "config": "B64K_C256M",
+        "MiB": 227.5,
+        "unique_MiB": 991.1,
+        "groups": 4,
+        "blocks": 15860,
+        "block_refs": 19995,
+        "meta_MiB_est": 2.12,
+        "max_group_MiB": 249.8,
+        "s": 260
+      }
+    ]
+  },
+  "decision": {
+    "gb": "64 KiB blocks, 32 MiB groups (32 MiB dictionary): 26.1 total vs 31.6 with the NES v3 engine",
+    "gbc": "64 KiB blocks, 32 MiB groups: 104.2 total vs 126.7 with the NES v3 engine; 64 MiB groups save only 0.3%",
+    "gba": "1 MiB blocks, 128 MiB groups (128 MiB dictionary): 228.0 total vs 297.5 with 32 MiB groups; 256 MiB groups save only 0.2%"
+  }
+}

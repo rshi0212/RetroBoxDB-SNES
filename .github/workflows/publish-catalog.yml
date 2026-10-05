@@ -1,0 +1,42 @@
+name: Publish verified SNES Catalog
+
+on:
+  push:
+    branches: [main]
+    paths: [release/catalog-release.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snes-catalog-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out the requested public commit
+        env:
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          git init .
+          git remote add origin "https://github.com/${SOURCE_REPOSITORY}.git"
+          git fetch --depth=1 origin "$SOURCE_COMMIT"
+          git checkout --detach FETCH_HEAD
+      - name: Build and verify metadata-only Catalog
+        run: python3 -B tools/build_catalog_release.py
+      - name: Upload verified Catalog and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          RELEASE_TAG=$(python3 -c 'import json; print(json.load(open("release/catalog-release.json"))["tag"])')
+          RELEASE_TITLE=$(python3 -c 'import json; print(json.load(open("release/catalog-release.json"))["title"])')
+          gh release create "$RELEASE_TAG" dist/RetroBoxDB.SNES.Catalog.sqlite dist/SHA256SUMS \
+            --draft --target "$SOURCE_COMMIT" --title "$RELEASE_TITLE" --notes-file dist/release-notes.md
+          gh release edit "$RELEASE_TAG" --draft=false --latest

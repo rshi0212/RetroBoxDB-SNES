@@ -1,4 +1,4 @@
--- RetroBoxDB cartridge extension (SNES / Mega Drive), applied after the transformed base schema.
+-- RetroBoxDB storage v4 extension (SNES, Mega Drive, GB, GBC, GBA), applied after the transformed base schema.
 -- Storage v4 = v3 + 'lzma2-solid' compression groups (<=32 MiB, family-ordered 64 KiB blocks).
 CREATE TABLE snes_hardware(
  rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
@@ -119,3 +119,56 @@ CREATE TABLE object_families(
 ) STRICT;
 CREATE INDEX object_family_key ON object_families(family_key);
 CREATE INDEX solid_group_family_key ON solid_group_families(family_key);
+
+-- Game Boy / Game Boy Color cartridge header (0x100-0x14F) and Game Boy Advance header (0x00-0xBF).
+-- Only a SHA1 of the Nintendo logo bitmap is stored; the views flag the logo that most dumps share.
+CREATE TABLE gb_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ title TEXT,title_hex TEXT NOT NULL,manufacturer_code TEXT,cgb_flag INTEGER NOT NULL,cgb_mode TEXT NOT NULL,sgb_flag INTEGER NOT NULL,
+ licensee_old INTEGER NOT NULL,licensee_new TEXT,cartridge_type INTEGER NOT NULL,cartridge_type_name TEXT,
+ battery INTEGER NOT NULL,rtc INTEGER NOT NULL,rumble INTEGER NOT NULL,rom_size_code INTEGER NOT NULL,rom_size_declared INTEGER,
+ ram_size_code INTEGER NOT NULL,ram_size_declared INTEGER,destination INTEGER NOT NULL,version INTEGER NOT NULL,
+ header_checksum_declared INTEGER NOT NULL,header_checksum_computed INTEGER NOT NULL,header_checksum_valid INTEGER NOT NULL,
+ global_checksum_declared INTEGER NOT NULL,global_checksum_computed INTEGER NOT NULL,global_checksum_valid INTEGER NOT NULL,
+ logo_sha1 TEXT NOT NULL CHECK(length(logo_sha1)=40),raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+CREATE TABLE gba_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ title TEXT,game_code TEXT,maker_code TEXT,fixed_value INTEGER NOT NULL,unit_code INTEGER NOT NULL,device_type INTEGER NOT NULL,
+ version INTEGER NOT NULL,complement_declared INTEGER NOT NULL,complement_computed INTEGER NOT NULL,complement_valid INTEGER NOT NULL,
+ entry_hex TEXT NOT NULL,logo_sha1 TEXT NOT NULL CHECK(length(logo_sha1)=40),save_types TEXT,padding_byte INTEGER,padding_bytes INTEGER NOT NULL,
+ raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+CREATE TRIGGER immutable_gb_hardware_update BEFORE UPDATE ON gb_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_gb_hardware_delete BEFORE DELETE ON gb_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_gba_hardware_update BEFORE UPDATE ON gba_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_gba_hardware_delete BEFORE DELETE ON gba_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE VIEW v_gb_headers AS
+ WITH common AS (SELECT logo_sha1 FROM gb_hardware GROUP BY logo_sha1 ORDER BY count(*) DESC LIMIT 1)
+ SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.title,h.manufacturer_code,h.cgb_mode,h.sgb_flag=3 AS sgb_enhanced,
+ h.cartridge_type_name,h.battery,h.rtc,h.rumble,h.rom_size_declared,h.ram_size_declared,h.destination,h.version,
+ coalesce(h.licensee_new,printf('%02X',h.licensee_old)) AS licensee,h.header_checksum_valid,h.global_checksum_valid,
+ h.logo_sha1=(SELECT logo_sha1 FROM common) AS logo_is_common
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN gb_hardware h ON h.rom_id=r.id;
+CREATE VIEW v_gba_headers AS
+ WITH common AS (SELECT logo_sha1 FROM gba_hardware GROUP BY logo_sha1 ORDER BY count(*) DESC LIMIT 1)
+ SELECT r.id AS rom_id,o.sha1,o.size,r.parse_status,h.title,h.game_code,h.maker_code,h.version,h.complement_valid,h.save_types,
+ h.padding_byte,h.padding_bytes,o.size-h.padding_bytes AS content_bytes,h.logo_sha1=(SELECT logo_sha1 FROM common) AS logo_is_common
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN gba_hardware h ON h.rom_id=r.id;
+-- DAT diff joins (old/new entry -> release linkage) need both directions indexed.
+CREATE INDEX dat_change_old ON dat_changes(old_dat_rom_id);
+CREATE INDEX dat_change_new ON dat_changes(new_dat_rom_id);
+
+-- Every information source in this database, grouped as existing (DAT/ROM bytes), extended (No-Intro DB,
+-- RetroAchievements, names) and future/placeholder (frontend media and scraping). New snapshots appear as new rows.
+CREATE VIEW v_information_sources AS
+ SELECT 'existing' AS layer,'No-Intro DAT' AS source,ds.version AS version,ds.imported_at AS imported_at,
+  (SELECT count(*) FROM dat_games g WHERE g.dat_set_id=ds.id) AS entries,ds.name AS detail FROM dat_sets ds
+ UNION ALL SELECT 'existing','ROM files',NULL,min(imported_at),count(*),'local files (all kinds)' FROM files
+ UNION ALL SELECT 'extended','No-Intro DB Export + Dump Log',s.version,s.imported_at,(SELECT count(*) FROM ni_archives a WHERE a.snapshot_id=s.id),'snapshot '||s.id FROM ni_snapshots s
+ UNION ALL SELECT 'extended','RetroAchievements',r.fetched_at,r.fetched_at,r.games,'console '||r.console_id||', '||r.hashes||' hashes' FROM ra_snapshots r
+ UNION ALL SELECT 'extended','English/Chinese names',i.source_sha256,i.imported_at,(SELECT count(*) FROM game_name_entries e WHERE e.import_id=i.id),i.source_name FROM game_name_imports i
+ UNION ALL SELECT 'extended','Documented hardware assertions',NULL,min(created_at),count(*),'from No-Intro serial fields' FROM hardware_assertions
+ UNION ALL SELECT 'future','Frontend values (Batocera/ScreenScraper)',NULL,max(updated_at),count(*),'placeholders until scraped' FROM frontend_game_values
+ UNION ALL SELECT 'future','Frontend media slots',NULL,max(updated_at),count(*),'placeholders until media is stored' FROM frontend_media_slots
+ UNION ALL SELECT 'future','Scrape records',NULL,max(fetched_at),count(*),'provider responses' FROM scrape_records;

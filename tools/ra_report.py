@@ -1,4 +1,4 @@
-"""RetroAchievements coverage report for a cartridge RetroBoxDB (read-only).
+"""RetroAchievements coverage report for a storage-v4 RetroBoxDB (read-only).
 
 python3 -B tools/ra_report.py FULL_OR_CATALOG.sqlite OUT_PREFIX
 Writes OUT_PREFIX.json (summary) and OUT_PREFIX-games.csv: one row per RA game with achievements,
@@ -7,6 +7,10 @@ or unmatched (no DAT entry or local ROM has any of its hashes: usually hacks, tr
 dumps that No-Intro does not list).
 """
 import csv, json, sqlite3, sys
+
+# rcheevos hashing per RA console ID; matching is exact hash equality.
+RULES = {7: 'MD5 of the ROM body without the 16-byte iNES/NES 2.0 header (headered and headerless dumps hash the same)',
+         3: 'MD5 of the file after a 512-byte copier header when size % 8192 == 512, otherwise of the whole file'}
 
 
 def main(db, prefix):
@@ -36,7 +40,7 @@ def main(db, prefix):
     out = {'snapshot_id': snap['id'], 'console_id': snap['console_id'], 'fetched_at': snap['fetched_at'],
            'ra_games_with_achievements': len(rows), 'status_totals': totals, 'by_category': summary,
            'local_roms_with_achievements': c.execute('SELECT count(DISTINCT rom_id) FROM v_rom_ra_matches WHERE has_achievements').fetchone()[0],
-           'rule': 'RA hash = MD5 of file (SNES: after 512-byte copier header when size % 8192 == 512); exact hash equality only'}
+           'rule': 'RA hash = ' + RULES.get(snap['console_id'], 'MD5 of the complete file') + '; exact hash equality only'}
     with open(prefix + '-games.csv', 'w', newline='', encoding='utf-8') as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0])); w.writeheader(); w.writerows(rows)
     with open(prefix + '.json', 'w', encoding='utf-8') as f: json.dump(out, f, ensure_ascii=False, indent=2)

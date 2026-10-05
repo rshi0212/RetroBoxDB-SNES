@@ -341,29 +341,36 @@ def main():
     args = parser.parse_args()
     data = args.csv.read_bytes()
     read_csv(data)
-    for database in args.databases:
-        # mode=rw prevents accidentally creating a new empty database on a typo.
-        c = sqlite3.connect(database.resolve().as_uri() + '?mode=rw', uri=True)
-        try:
+    # All databases are imported inside their own open transactions first; commits happen only after
+    # every database succeeded, so a failure leaves none of them changed (e.g. full database + Catalog).
+    connections = []
+    try:
+        reports = []
+        for database in args.databases:
+            # mode=rw prevents accidentally creating a new empty database on a typo.
+            c = sqlite3.connect(database.resolve().as_uri() + '?mode=rw', uri=True)
+            connections.append(c)
             c.execute('PRAGMA foreign_keys=ON')
             c.execute('PRAGMA synchronous=FULL')
             c.execute('BEGIN IMMEDIATE')
             report = import_names(c, data, args.csv.name, args.platform)
             errors = c.execute('PRAGMA foreign_key_check').fetchall()
             if errors:
-                raise ValueError(f'Foreign key errors: {errors[:10]}')
-            if args.dry_run:
-                c.rollback()
-            else:
-                c.commit()
+                raise ValueError(f'{database}: foreign key errors: {errors[:10]}')
+            reports.append((database, report))
+        for c in connections:
+            c.rollback() if args.dry_run else c.commit()
+        for database, report in reports:
             print(json.dumps({'database': str(database), 'dry_run': args.dry_run, **report},
                              ensure_ascii=False, indent=2))
-        except BaseException:
-            c.rollback()
-            raise
-        finally:
+    except BaseException:
+        for c in connections:
+            if c.in_transaction:
+                c.rollback()
+        raise
+    finally:
+        for c in connections:
             c.close()
-
 
 if __name__ == '__main__':
     main()

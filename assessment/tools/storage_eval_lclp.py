@@ -1,5 +1,5 @@
 import pickle,sys,lzma,multiprocessing as mp
-from cart_storage_fg import plan
+from storage_eval_fg import plan
 def run(a):
     g,lc,lp,pb=a
     f=[{'id':lzma.FILTER_LZMA2,'dict_size':32<<20,'lc':lc,'lp':lp,'pb':pb,'mode':lzma.MODE_NORMAL,'nice_len':273,'mf':lzma.MF_BT4}]

@@ -1,0 +1,134 @@
+{
+ "rule": "smallest group cap whose stored size is within 0.5% of the 256 MiB result (engineering ceiling: 256 MiB)",
+ "method": "Adjacent family-ordered solid groups of the populated database are concatenated k at a time and recompressed (raw LZMA2, lc3 lp0 pb0, BT4, nice_len 273, dictionary = merged size rounded up to a power of two); change is relative to the stored size at the base group cap. The chosen cap was then applied to the whole database by tools/retune_db.py (NES: tools/migrate_v4.py followed by tools/retune_db.py).",
+ "platforms": {
+  "nes": {
+   "base_cap_mib": 32,
+   "curve_pct": {
+    "64": -1.4,
+    "128": -2.59,
+    "256": -5.66
+   },
+   "curve_basis": "all 43 family-ordered groups, 1,289 MiB",
+   "chosen_cap_mib": 256,
+   "full_database": {
+    "groups_before": 43,
+    "groups_after": 6,
+    "stored_before": 360581220,
+    "stored_after": 340183113,
+    "change_pct": -5.66,
+    "seconds": 935
+   },
+   "v3_to_v4": {
+    "group_cap": 33554432,
+    "family_basis": {
+     "newest_dat": 7094,
+     "nointro_db": 339,
+     "title": 644,
+     "dat": 1
+    },
+    "rom_ra_hashes": 17725,
+    "blocks_moved": 164951,
+    "solid_groups": 43,
+    "solid_stored_bytes": 360581220,
+    "v3_groups_removed": 489,
+    "seconds": 695,
+    "v3_stored_bytes": {
+     "groups_lzma2_4m": 489,
+     "group_data_bytes": 342419600,
+     "loose_chunk_bytes": 39662981
+    },
+    "note": "v3 payload: 489 lzma2-4m groups plus loose XOR-delta chunks; v4 at 32 MiB before retune"
+   }
+  },
+  "snes": {
+   "base_cap_mib": 32,
+   "curve_pct": {
+    "64": -0.24,
+    "128": -0.51,
+    "256": -0.78
+   },
+   "curve_basis": "first 16 family-ordered groups, 484 MiB",
+   "chosen_cap_mib": 128,
+   "full_database": {
+    "groups_before": 145,
+    "groups_after": 37,
+    "stored_before": 1591582339,
+    "stored_after": 1583622393,
+    "change_pct": -0.5,
+    "seconds": 780
+   }
+  },
+  "megadrive": {
+   "base_cap_mib": 32,
+   "curve_pct": {
+    "64": -1.74,
+    "128": -1.99,
+    "256": -2.64
+   },
+   "curve_basis": "first 16 family-ordered groups, 472 MiB",
+   "chosen_cap_mib": 256,
+   "full_database": {
+    "groups_before": 143,
+    "groups_after": 17,
+    "stored_before": 961268624,
+    "stored_after": 923811871,
+    "change_pct": -3.9,
+    "seconds": 1117
+   }
+  },
+  "gb": {
+   "base_cap_mib": 32,
+   "curve_pct": {
+    "64": -1.31,
+    "128": -2.36,
+    "256": -3.73
+   },
+   "curve_basis": "all 18 groups, 551 MiB",
+   "chosen_cap_mib": 256,
+   "full_database": {
+    "groups_before": 18,
+    "groups_after": 3,
+    "stored_before": 138530582,
+    "stored_after": 133366387,
+    "change_pct": -3.73,
+    "seconds": 172
+   }
+  },
+  "gbc": {
+   "base_cap_mib": 32,
+   "curve_pct": {
+    "64": -1.04,
+    "128": -1.56,
+    "256": -2.65
+   },
+   "curve_basis": "first 16 family-ordered groups, 487 MiB",
+   "chosen_cap_mib": 256,
+   "full_database": {
+    "groups_before": 77,
+    "groups_after": 10,
+    "stored_before": 487886044,
+    "stored_after": 473832230,
+    "change_pct": -2.88,
+    "seconds": 644
+   }
+  },
+  "gba": {
+   "base_cap_mib": 128,
+   "curve_pct": {
+    "256": -2.08,
+    "512": -3.29
+   },
+   "curve_basis": "first 8 family-ordered groups, 956 MiB; 512 MiB exceeds the 256 MiB engineering ceiling",
+   "chosen_cap_mib": 256,
+   "full_database": {
+    "groups_before": 210,
+    "groups_after": 104,
+    "stored_before": 5964858402,
+    "stored_after": 5851510281,
+    "change_pct": -1.9,
+    "seconds": 7199
+   }
+  }
+ }
+}

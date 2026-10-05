@@ -1,0 +1,133 @@
+{
+ "sample": "600 of 4,579 NES families (seed 2026), 3,003 files from the Headered and Headerless folders (with Aftermarket/Private); 652.6 MiB ZIP, 1,667.4 MiB raw; bodies compared (16-byte headers are stored separately in both layouts)",
+ "unit": "MiB",
+ "sample_zip_MiB": 652.6,
+ "v3_engine": {
+  "config": "nes_v3_engine_as_is",
+  "stored_MiB": 81.1,
+  "sqlite_file_MiB": 91.8,
+  "import_s": 160,
+  "compact_s": 50
+ },
+ "v3_sqlite_file_MiB": 91.8,
+ "grid": [
+  {
+   "config": "per_file_lzma",
+   "MiB": 232.9,
+   "zip_MiB": 652.6,
+   "raw_MiB": 1667.4,
+   "unique_files_MiB": 703.4,
+   "s": 90
+  },
+  {
+   "config": "B8K_C2M",
+   "MiB": 83.8,
+   "unique_MiB": 268.0,
+   "groups": 155,
+   "blocks": 34305,
+   "block_refs": 90763,
+   "meta_MiB_est": 6.41,
+   "max_group_MiB": 2.0,
+   "s": 32
+  },
+  {
+   "config": "B8K_C16M",
+   "MiB": 80.7,
+   "unique_MiB": 268.0,
+   "groups": 20,
+   "blocks": 34305,
+   "block_refs": 90763,
+   "meta_MiB_est": 6.41,
+   "max_group_MiB": 16.0,
+   "s": 41
+  },
+  {
+   "config": "B8K_C32M",
+   "MiB": 79.8,
+   "unique_MiB": 268.0,
+   "groups": 10,
+   "blocks": 34305,
+   "block_refs": 90763,
+   "meta_MiB_est": 6.41,
+   "max_group_MiB": 32.0,
+   "s": 61
+  },
+  {
+   "config": "B16K_C32M",
+   "MiB": 83.1,
+   "unique_MiB": 300.2,
+   "groups": 12,
+   "blocks": 19279,
+   "block_refs": 45475,
+   "meta_MiB_est": 3.39,
+   "max_group_MiB": 32.0,
+   "s": 43
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 90.7,
+   "unique_MiB": 382.7,
+   "groups": 13,
+   "blocks": 6239,
+   "block_refs": 11469,
+   "meta_MiB_est": 0.97,
+   "max_group_MiB": 31.9,
+   "s": 44
+  },
+  {
+   "config": "B64K_C64M",
+   "MiB": 87.1,
+   "unique_MiB": 382.7,
+   "groups": 7,
+   "blocks": 6239,
+   "block_refs": 11469,
+   "meta_MiB_est": 0.97,
+   "max_group_MiB": 63.8,
+   "s": 65
+  },
+  {
+   "config": "B4K_C32M",
+   "MiB": 76.7,
+   "unique_MiB": 240.9,
+   "groups": 8,
+   "blocks": 61676,
+   "block_refs": 181525,
+   "meta_MiB_est": 12.22,
+   "max_group_MiB": 32.0,
+   "s": 42
+  },
+  {
+   "config": "B8K_C64M",
+   "MiB": 77.2,
+   "unique_MiB": 268.0,
+   "groups": 5,
+   "blocks": 34305,
+   "block_refs": 90763,
+   "meta_MiB_est": 6.41,
+   "max_group_MiB": 63.9,
+   "s": 66
+  },
+  {
+   "config": "B8K_C128M",
+   "MiB": 75.5,
+   "unique_MiB": 268.0,
+   "groups": 3,
+   "blocks": 34305,
+   "block_refs": 90763,
+   "meta_MiB_est": 6.41,
+   "max_group_MiB": 127.6,
+   "s": 113
+  }
+ ],
+ "v4_best_config": "8 KiB / 128 MiB",
+ "v4_best_total_MiB": 81.9,
+ "decision_en": "migrated to v4 with 8 KiB blocks (cut at header/trainer/PRG/CHR boundaries) and 256 MiB groups. On the full database the v3 payload (489 lzma2-4m groups plus XOR-delta loose blocks, 382,082,581 bytes) became 344,223,238 bytes (−9.91%); the real-data curve was 64 MiB −1.40%, 128 MiB −2.59%, 256 MiB −5.66% against 32 MiB groups, smaller caps stay more than 0.5% above the 256 MiB result, so 256 MiB is used.",
+ "decision_zh": "迁移到 v4：8 KiB 块（按头部、trainer、PRG、CHR 边界切分），256 MiB 组。全库实测，v3 载荷（489 个 lzma2-4m 组加 XOR 差分散块，382,082,581 字节）变为 344,223,238 字节（−9.91%）；真实数据曲线相对 32 MiB 组为 64 MiB −1.40%、128 MiB −2.59%、256 MiB −5.66%，较小的组都比 256 MiB 大 0.5% 以上，按规则取 256 MiB。",
+ "full_database": {
+  "v3_payload_bytes": 382082581,
+  "v4_payload_bytes": 344223238,
+  "change_pct": -9.91,
+  "v3_file_bytes": 563740672,
+  "v4_file_bytes": 530186240
+ }
+}

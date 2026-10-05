@@ -1,8 +1,13 @@
 """RetroBoxDB 3.0. Python >=3.10, stdlib only. Source lives inside SQLite.
 
 Storage v3 adds bounded shared compression groups and still reads v2 files.
+
+Base layer of the unified engine: the NES v3 engine (resource engine.py of the v3 RetroBoxDB.sqlite) with
+post-audit fixes (2026-10-04): naming decisions only for full-file DAT scopes, DAT size bounds, raw DAT size
+limit, safe_name rejects Unicode control/format characters, clearer export error. tools/engine_v4.py extends it
+(storage v4, platform adapters); see reports/audit-resolution-20261004.md and RetroBoxDB.Storage-v4.Technical-Design.en.md.
 """
-import argparse, datetime, functools, itertools, hashlib, io, json, os, pathlib, re, sqlite3, struct, sys, zipfile, zlib
+import argparse, datetime, functools, itertools, hashlib, io, json, os, pathlib, re, sqlite3, struct, sys, unicodedata, zipfile, zlib
 import xml.etree.ElementTree as ET
 VERSION = '1.0.0'
 CHUNK = 1048576
@@ -13,7 +18,8 @@ def hashes(data):
     return dict(size=len(data),sha256=hashlib.sha256(data).hexdigest(),sha1=hashlib.sha1(data).hexdigest(),md5=hashlib.md5(data).hexdigest(),crc32=f'{zlib.crc32(data):08x}')
 def safe_name(name):
     n=name.replace('\\','/')
-    if not n or n.startswith('/') or ':' in n or any(ord(c)<32 for c in n) or any(p in ('','..','.') for p in n.split('/')): raise ValueError('Unsafe or ambiguous filename: '+repr(name))
+    # Control and invisible format characters (e.g. U+202E RTL override) would make names display deceptively.
+    if not n or n.startswith('/') or ':' in n or any(ord(c)<32 or unicodedata.category(c) in ('Cc','Cf') for c in n) or any(p in ('','..','.') for p in n.split('/')): raise ValueError('Unsafe or ambiguous filename: '+repr(name))
     return n
 def xml(data):
     # Logiqx external DOCTYPE declarations are harmless; never load a DTD or entities.
@@ -162,11 +168,15 @@ class DB:
                     v=r.get('crc' if key=='crc32' else key)
                     if v is not None and not re.fullmatch('[0-9a-fA-F]{'+str(n)+'}',v): raise ValueError('Invalid DAT checksum')
                     vals[key]=v.lower() if v else None
-                self.insert('dat_roms',dat_game_id=gid,ordinal=ri,name=r.attrib['name'],size=int(r.get('size')) if r.get('size') is not None else None,status=r.get('status'),merge_name=r.get('merge'),attrs_json=js(r.attrib),**vals)
+                size=r.get('size')
+                if size is not None and (not size.isdigit() or int(size)>2**63-1): raise ValueError('Invalid DAT ROM size: '+repr(size))
+                self.insert('dat_roms',dat_game_id=gid,ordinal=ri,name=r.attrib['name'],size=int(size) if size is not None else None,status=r.get('status'),merge_name=r.get('merge'),attrs_json=js(r.attrib),**vals)
         self.event('import_dat','dat_sets',ds); return ds
     def import_dat_path(self,path,mode='auto'):
         p=pathlib.Path(path).expanduser().resolve()
-        if p.suffix.lower()!='.zip': return [self.import_dat(p.read_bytes(),p.name,mode,path=str(p))]
+        if p.suffix.lower()!='.zip':
+            if p.stat().st_size>MAX_ROM: raise ValueError('DAT size limit')
+            return [self.import_dat(p.read_bytes(),p.name,mode,path=str(p))]
         with p.open('rb') as f: oid=self.put_stream(f)
         fid=self.file(oid,p.name,'archive',str(p)); result=[]
         with zipfile.ZipFile(p) as z:
@@ -193,7 +203,9 @@ class DB:
         if oid is None: return 'unverifiable'
         o=self.c.execute('SELECT * FROM objects WHERE id=?',(oid,)).fetchone(); status,strength,detail=self.compare(o,target)
         self.c.execute('INSERT INTO validations(rom_id,dat_rom_id,scope,checked_object_id,status,strength,details_json,checked_at) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(rom_id,dat_rom_id,scope) DO UPDATE SET status=excluded.status,strength=excluded.strength,details_json=excluded.details_json,checked_at=excluded.checked_at',(rid,drid,target['hash_scope'],oid,status,strength,js(detail),now()))
-        if status=='match':
+        # A DAT name describes the exact bytes it hashes: only full-file scopes name the stored file
+        # (a headerless DAT's .unh name must not become the canonical name of a headered file).
+        if status=='match' and oid==r['object_id']:
             for f in self.c.execute('SELECT id,original_name FROM files WHERE object_id=? AND kind=\'rom\'',(r['object_id'],)).fetchall():
                 if f['original_name']!=target['name']:
                     reason='case_only' if f['original_name'].casefold()==target['name'].casefold() else 'dat_name'
@@ -308,6 +320,9 @@ def _crc_shift_uncached(crc,length):
 def _crc_shift_basis(length): return tuple(_crc_shift_uncached(1<<i,length) for i in range(32))
 
 def crc_shift(crc,length):
+    # Returns the CRC32 contribution of `crc` after appending `length` zero bytes, in the same (output) domain
+    # zlib.crc32 uses, such that crc_shift(crc32(a),len(b)) ^ crc32(b) == crc32(a+b) for every a, b.
+    # Callers combine values only within that identity (header CRC shifted over body length, XOR body CRC).
     matrix=_crc_shift_basis(length); out=0; i=0
     while crc:
         if crc&1: out^=matrix[i]
@@ -315,7 +330,10 @@ def crc_shift(crc,length):
     return out
 
 def reconcile(db,old_ds,new_ds,headerless_ds):
-    """DAT diff and exact verified header recovery, never modifying originals."""
+    """DAT diff and exact verified header recovery, never modifying originals.
+
+    Requires a prior scan() of all three DAT sets: already-matched targets are read from validations.
+    """
     for ds,mode in [(old_ds,'headered'),(new_ds,'headered'),(headerless_ds,'headerless')]:
         r=db.c.execute('SELECT mode,platform_id FROM dat_sets WHERE id=?',(ds,)).fetchone()
         if r is None or r['mode']!=mode or r['platform_id']!=1: raise ValueError('Expected NES DAT mode '+mode)
@@ -381,7 +399,7 @@ def reconcile(db,old_ds,new_ds,headerless_ds):
                         chosen=(h,fid); method='bounded_search'; break
             if chosen: source=r; break
         if chosen:
-            out=db.repair_header(source['id'],t['id'],chosen[0],chosen[1]); results['recovered_'+method if method=='existing_header' else 'recovered_bounded_search']+=1
+            out=db.repair_header(source['id'],t['id'],chosen[0],chosen[1]); results[('recovered_'+method) if method=='existing_header' else 'recovered_bounded_search']+=1
             db.insert('repair_attempts',target_dat_rom_id=t['id'],source_rom_id=source['id'],status='recovered',details_json=js({'method':method,'result_rom_id':out,'all_target_hashes_verified':True,'bounded_search_max_changed_header_bytes':2 if method=='bounded_search' else None}),created_at=now())
         else:
             results['unresolved']+=1; db.insert('repair_attempts',target_dat_rom_id=t['id'],source_rom_id=candidates[0]['id'] if candidates else None,status='unresolved',details_json=js({'reason':'no exact verified header in observed pool or <=2-byte correction; or matching body unavailable','body_candidates':len(candidates)}),created_at=now())
@@ -847,6 +865,7 @@ class DB(BaseDB):
             data=self.archive_bytes(ar[0]);iterator=iter([data]);expected=dict(self.c.execute('SELECT * FROM archive_plans WHERE id=?',(ar[0],)).fetchone())
         else:iterator=self.stream(row[0]);expected=dict(self.c.execute('SELECT * FROM objects WHERE id=?',(row[0],)).fetchone())
         p=pathlib.Path(path).expanduser();created=False
+        if not p.parent.is_dir():raise ValueError('Export parent directory must exist: '+str(p.parent))
         try:
             with p.open('xb') as f:
                 created=True;hs={k:hashlib.new(k) for k in ('sha256','sha1','md5')};crc=0;size=0
@@ -949,6 +968,7 @@ def normalize_archive_entries(entries):
             name=safe_name(name[:-1])+'/'
         else:name=safe_name(name)
         cleaned.append((name,oid))
+    # A directory entry is dropped only when a deeper entry implies it (extraction recreates it), keeping plans minimal.
     cleaned=[(n,o) for n,o in cleaned if o is not None or not any(other!=n and other.startswith(n) for other,_ in cleaned)]
     cleaned.sort(key=lambda x:x[0].lower())
     if len({n.casefold() for n,o in cleaned})!=len(cleaned):raise ValueError('Case-insensitive ZIP member collision')

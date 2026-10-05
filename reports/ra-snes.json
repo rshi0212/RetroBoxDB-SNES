@@ -36,5 +36,5 @@
     }
   },
   "local_roms_with_achievements": 914,
-  "rule": "RA hash = MD5 of file (SNES: after 512-byte copier header when size % 8192 == 512); exact hash equality only"
+  "rule": "RA hash = MD5 of the file after a 512-byte copier header when size % 8192 == 512, otherwise of the whole file; exact hash equality only"
 }
