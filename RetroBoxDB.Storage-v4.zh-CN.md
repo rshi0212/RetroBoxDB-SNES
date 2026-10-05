@@ -4,20 +4,20 @@
 
 七个平台各有一个完整库（含 ROM 数据，只保存在本地）和一个公开 Catalog（只含元数据）。七个库使用同一份引擎和同一种存储格式（v4），各平台在块大小、组上限、头部解析和导入路径上的差异由库内 `meta` 参数和平台适配代码表达。原始大小包括 No-Intro 目录和 RetroAchievements 整理的 ROM 目录（见“导入内容”）。
 
-| 平台 | 原始大小（ZIP／解压后 ROM） | 完整库 | 比例（相对 ZIP／ROM） | Catalog | 单个 ROM（冷缓存） | 单个 TorrentZip（冷缓存） | 全集合顺序导出 |
+| 平台 | 原始大小（ZIP／解压后 ROM） | 完整库 | 比例（相对 ZIP／ROM） | Catalog | 单个 ROM（冷缓存） | 单个 TorrentZip（冷缓存） | 按 DAT 整套导出 |
 | --- | --- | ---: | ---: | ---: | --- | --- | --- |
-| NES | 4.35 GiB／11.18 GiB | 536.8 MiB | 12.1%／4.7% | 145.1 MiB | 2.325 s | 1.983 s | 32.3 MiB/s（24,912 个文件） |
-| SNES | 6.09 GiB／10.90 GiB | 1.78 GiB | 29.3%／16.4% | 53.7 MiB | 1.121 s | 1.398 s | 22.3 MiB/s（6,734 个文件） |
-| Mega Drive | 4.66 GiB／9.61 GiB | 998.5 MiB | 20.9%／10.2% | 44.7 MiB | 1.734 s | 2.087 s | 21.4 MiB/s（6,216 个文件） |
-| Game Boy | 401.1 MiB／1.05 GiB | 177.7 MiB | 44.3%／16.5% | 35.5 MiB | 1.594 s | 1.812 s | 21.4 MiB/s（3,392 个文件） |
-| Game Boy Color | 1.38 GiB／4.42 GiB | 522.2 MiB | 37.1%／11.5% | 45.5 MiB | 1.719 s | 1.857 s | 35.7 MiB/s（3,581 个文件） |
-| Game Boy Advance | 21.20 GiB／44.24 GiB | 7.01 GiB | 33.1%／15.9% | 57.8 MiB | 2.413 s | 2.682 s | 22.3 MiB/s（5,152 个文件） |
-| Famicom Disk System | 33.8 MiB／82.7 MiB | 21.1 MiB | 62.4%／25.5% | 9.5 MiB | 0.364 s | 0.334 s | 20.0 MiB/s（747 个文件） |
+| NES | 4.35 GiB／11.18 GiB | 536.8 MiB | 12.1%／4.7% | 145.1 MiB | 2.325 s | 1.983 s | 71.7 MiB/s（7,090 个文件） |
+| SNES | 6.06 GiB／10.90 GiB | 1.76 GiB | 29.1%／16.2% | 53.7 MiB | 1.094 s | 1.397 s | 28.0 MiB/s（4,261 个文件） |
+| Mega Drive | 4.66 GiB／9.61 GiB | 998.5 MiB | 20.9%／10.2% | 44.7 MiB | 1.734 s | 2.087 s | 18.8 MiB/s（3,398 个文件） |
+| Game Boy | 401.1 MiB／1.05 GiB | 177.7 MiB | 44.3%／16.5% | 35.5 MiB | 1.594 s | 1.812 s | 41.0 MiB/s（2,232 个文件） |
+| Game Boy Color | 1.38 GiB／4.42 GiB | 522.2 MiB | 37.1%／11.5% | 45.5 MiB | 1.719 s | 1.857 s | 56.2 MiB/s（2,503 个文件） |
+| Game Boy Advance | 21.20 GiB／44.24 GiB | 7.01 GiB | 33.1%／15.9% | 57.8 MiB | 2.413 s | 2.682 s | 25.1 MiB/s（3,676 个文件） |
+| Famicom Disk System | 33.8 MiB／82.7 MiB | 21.1 MiB | 62.5%／25.6% | 9.5 MiB | 0.364 s | 0.334 s | 30.4 MiB/s（405 个文件） |
 
 Catalog 从新的 SQLite 文件建立，`compression_groups`、`chunks`、`object_chunks` 三张表为空，不含 ROM 数据、DAT／DB／Dump Log 原文件或压缩数据。导出性能为本机（Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz，Python 3.14）在空闲负载下的实测，导出过程包含全部校验：
 
 - **单个文件（冷缓存）**：固定种子随机抽取 100 个 ROM 和 50 个 TorrentZip，每次导出前清空引擎缓存。耗时主要来自解压所在实体组中该文件之前的部分，组越大耗时越长，这是选择大组换取压缩率的代价。
-- **全集合顺序导出**：按存储顺序把库中每个 ROM 文件各导出一次，使用批量缓存（最多 2 GiB，整组解压）；解压后总量在 2 GiB 以内的库每组只解压一次，超过时（NES）跨组对象会让部分组重新解压。对应按 DAT 版本、RA、1G1R 等条件批量导出的场景。
+- **按 DAT 整套导出**：用 `tools/export_set.py` 把最新 DAT 的全部游戏导出为裸 ROM（NES 用有头 DAT，FDS 用 FDS 格式），按存储顺序读取、批量缓存（最多 2 GiB，整组解压），每个文件按 DAT 的全部哈希校验，哈希与写文件在线程池中进行，结束时统一落盘一次；计时含进程启动和筛选。单文件导出（`engine.py export`）则每个文件写完即 `fsync`。
 
 ## 存储方案的评估方法
 
@@ -67,13 +67,13 @@ Catalog 从新的 SQLite 文件建立，`compression_groups`、`chunks`、`objec
 - 每个块保留 ID、大小和 SHA256；对象按块拼接，导出时核对完整的 CRC32、MD5、SHA1、SHA256。
 - 读取时只解压到所需位置，每个块仍单独核对 SHA256。解码缓存为两个组大小；块分布在多个组中的对象（如多合一卡带）按组读取，每组只解压一次；审计和批量导出时缓存放宽到不超过 2 GiB（且不超过全部组的解压后总量），并整组解压，不保留未完成解码器的字典窗口。
 - NES 保留 16 字节头部与正文分开存储、有头和无头版本共用正文的结构，块按头部、PRG、CHR 边界对齐（8 KiB）。
-- 源 ZIP 只保留原始校验值，导出时由 TorrentZip 配方重新生成。七个库共 49,621 个源 ZIP（No-Intro 与 RetroAchievements 集合，均为 TorrentZip），其中 49,621 个经核对可逐字节重建（`v_file_checksums.exported_bytes_equal_source`）。
+- 源 ZIP 只保留原始校验值，导出时由 TorrentZip 配方重新生成。七个库共 49,581 个源 ZIP（No-Intro 与 RetroAchievements 集合，均为 TorrentZip），其中 49,581 个经核对可逐字节重建（`v_file_checksums.exported_bytes_equal_source`）。
 - 格式标记为 `user_version=4`。v3 引擎无法打开 v4 库；v4 引擎可以读取 v2、v3、v4。
 
 | 平台 | 块 | 组上限／字典 | 组数 | 去重后原始块 → 压缩后 |
 | --- | ---: | ---: | ---: | --- |
 | NES | 8 KiB | 256 MiB | 9 | 1.35 GiB → 344.7 MiB |
-| SNES | 64 KiB | 128 MiB | 57 | 5.43 GiB → 1.71 GiB |
+| SNES | 64 KiB | 128 MiB | 57 | 5.38 GiB → 1.70 GiB |
 | Mega Drive | 64 KiB | 256 MiB | 20 | 4.07 GiB → 940.5 MiB |
 | Game Boy | 64 KiB | 256 MiB | 5 | 631.2 MiB → 139.5 MiB |
 | Game Boy Color | 64 KiB | 256 MiB | 13 | 2.40 GiB → 469.2 MiB |
@@ -87,11 +87,11 @@ Catalog 从新的 SQLite 文件建立，`compression_groups`、`chunks`、`objec
 | | NES | SNES | Mega Drive | Game Boy | Game Boy Color | Game Boy Advance | Famicom Disk System |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | No-Intro（ZIP／大小） | 21,792／4.12 GiB | 4,898／3.99 GiB | 5,281／3.93 GiB | 2,671／295.8 MiB | 3,006／1.06 GiB | 3,946／14.42 GiB | 720／32.4 MiB |
-| RetroAchievements 集合（ZIP／大小） | 1,969／229.8 MiB | 1,876／2.09 GiB | 934／753.3 MiB | 720／105.3 MiB | 575／326.7 MiB | 1,206／6.78 GiB | 27／1.4 MiB |
+| RetroAchievements 集合（ZIP／大小） | 1,969／229.8 MiB | 1,836／2.07 GiB | 934／753.3 MiB | 720／105.3 MiB | 575／326.7 MiB | 1,206／6.78 GiB | 27／1.4 MiB |
 
 | | NES | SNES | Mega Drive | Game Boy | Game Boy Color | Game Boy Advance | Famicom Disk System |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 本地 ZIP | 23,761 | 6,774 | 6,215 | 3,391 | 3,581 | 5,152 | 747 |
+| 本地 ZIP | 23,761 | 6,734 | 6,215 | 3,391 | 3,581 | 5,152 | 747 |
 | ROM 记录 | 18,414 | 5,239 | 3,959 | 2,538 | 2,784 | 4,143 | 703 |
 | 游戏组／发行版本 | 3,477／7,385 | 1,996／4,329 | 1,581／3,503 | 1,419／2,299 | 1,576／2,622 | 1,901／3,750 | 307／408 |
 | 不在任何 DAT 的本地 ROM | 2,849 | 978 | 561 | 306 | 279 | 467 | 9 |
@@ -108,7 +108,7 @@ Catalog 从新的 SQLite 文件建立，`compression_groups`、`chunks`、`objec
 
 游戏组与发行版本取自最新 DAT 的 Parent／Clone，不推测发行字段。同一平台有多种 DAT 格式时（NES 有头／无头，FDS 的 FDS／QD），各格式分别与本格式的旧版本做差异；主格式（列表第一个）建立游戏与发行版本，其他格式的条目挂到同名的主格式发行版本，没有同名的挂到其 Parent 所在游戏下。ROM 目录中的非 ZIP 文件（GB 目录中前端使用的 `metadata.txt`／`systeminfo.txt`）作为 `metadata` 文件保存。
 
-RetroAchievements 整理的 ROM 目录（`/mnt/MyShare/RetroAchievements/RA - <平台>`）按与 No-Intro 目录相同的方式去重入库：已在库中的 ROM 只增加文件记录和来源关联，新 ROM（Hack、翻译版、自制游戏、No-Intro 未收录的版本等）按块去重后存入。不在任何 DAT 中的 ROM 归入与它共享块最多的已存 ROM 所在的游戏族（`object_families.basis='shared_blocks'`，多数 Hack 与原版同族，压缩时排在一起），没有共享块的按文件名标题归族。NES 的 RA 目录中混有 FDS 磁碟镜像，导入 NES 时跳过并列入报告，由 FDS 库导入。
+RetroAchievements 整理的 ROM 目录（`/mnt/MyShare/RetroAchievements/RA - <平台>`）按与 No-Intro 目录相同的方式去重入库：已在库中的 ROM 只增加文件记录和来源关联，新 ROM（Hack、翻译版、自制游戏、No-Intro 未收录的版本等）按块去重后存入。不在任何 DAT 中的 ROM 归入与它共享块最多的已存 ROM 所在的游戏族（`object_families.basis='shared_blocks'`，多数 Hack 与原版同族，压缩时排在一起），没有共享块的按文件名标题归族。NES 的 RA 目录中混有 FDS 磁碟镜像，导入 NES 时跳过并列入报告，由 FDS 库导入；SNES 的 RA 目录中的 Satellaview（BS-X，`.bs`）文件属于独立平台，导入 SNES 时同样跳过并列入报告，留待以后单独建库。
 
 ## 内部头部
 
@@ -207,4 +207,4 @@ python3 -B -c 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); s=c.execute("
 python3 -B tools/build_db.py gba RetroBoxDB.GBA.sqlite --catalog RetroBoxDB.GBA.Catalog.sqlite
 ```
 
-`resources` 中的 `engine.py` 等是可执行代码，只应从自己构建或 SHA256 已核对的 Release 附件中执行。公开 Catalog 保留文件的原始路径（`files.source_path`）作为溯源信息。全量审计：NES 19,069 个对象／9 个组／25,368 个 ZIP 配方；SNES 5,283 个对象／57 个组／5,814 个 ZIP 配方；Mega Drive 3,963 个对象／20 个组／5,367 个 ZIP 配方；Game Boy 2,546 个对象／5 个组／2,776 个 ZIP 配方；Game Boy Color 2,791 个对象／13 个组／2,931 个 ZIP 配方；Game Boy Advance 4,149 个对象／123 个组／4,396 个 ZIP 配方；Famicom Disk System 712 个对象／1 个组／728 个 ZIP 配方，全部通过。
+`resources` 中的 `engine.py` 等是可执行代码，只应从自己构建或 SHA256 已核对的 Release 附件中执行。公开 Catalog 保留文件的原始路径（`files.source_path`）作为溯源信息。全量审计：NES 19,069 个对象／9 个组／25,368 个 ZIP 配方；SNES 5,243 个对象／57 个组／5,774 个 ZIP 配方；Mega Drive 3,963 个对象／20 个组／5,367 个 ZIP 配方；Game Boy 2,546 个对象／5 个组／2,776 个 ZIP 配方；Game Boy Color 2,791 个对象／13 个组／2,931 个 ZIP 配方；Game Boy Advance 4,149 个对象／123 个组／4,396 个 ZIP 配方；Famicom Disk System 712 个对象／1 个组／728 个 ZIP 配方，全部通过。

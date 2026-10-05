@@ -6,11 +6,11 @@ Single-file SQLite preservation database for Super Nintendo Entertainment System
 
 | Item | Value |
 | --- | --- |
-| Original size | 6,774 source ZIPs, 6.09 GiB (No-Intro 4,898, RetroAchievements sets 1,876); 6,734 ROM files, 10.90 GiB uncompressed |
-| Stored size | populated database 1.78 GiB; public Catalog 53.7 MiB (no ROM data) |
-| Ratio | 29.3% of the source ZIPs, 16.4% of the uncompressed ROM files |
+| Original size | 6,734 source ZIPs, 6.06 GiB (No-Intro 4,898, RetroAchievements sets 1,836); 6,734 ROM files, 10.90 GiB uncompressed |
+| Stored size | populated database 1.76 GiB; public Catalog 53.7 MiB (no ROM data) |
+| Ratio | 29.1% of the source ZIPs, 16.2% of the uncompressed ROM files |
 | Technology | storage v4: SHA256-deduplicated 64 KiB blocks packed in No-Intro family order into solid LZMA2 groups of up to 128 MiB (128 MiB dictionary); per-block SHA256 and per-object CRC32/MD5/SHA1/SHA256 verification; source ZIPs reproduced byte-for-byte from TorrentZip plans |
-| Export performance | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, idle, Python 3.14.4, all checks included. Whole-set export (6,734 ROM files in storage order, each group decoded once): 22.3 MiB/s, 74 ms per file on average; single file with a cold cache (the group is decoded up to the file): ROM 1.121 s, TorrentZip 1.398 s on average |
+| Export performance | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, idle, Python 3.14.4, all checks included. whole newest-DAT set with `export_set.py` (4,261 files, each checked against the DAT hashes): 28.0 MiB/s, 52 ms per file on average; single file with a cold cache (the group is decoded up to the file): ROM 1.094 s, TorrentZip 1.397 s on average |
 
 ## Downloads and documents
 
@@ -29,6 +29,7 @@ Change against 32 MiB groups on real data (first 16 family-ordered groups, 484 M
 - Internal header: the location (LoROM 0x7FC0, HiROM 0xFFC0, ExLoROM, ExHiROM) is chosen by a score over checksum/complement, map mode, title, ROM-size byte and reset vector; below the threshold a dump stays `unclassified` (mostly betas, prototypes, pirate carts and enhancement-chip firmware). Map mode, FastROM, chipset and coprocessor, SRAM size, region, maker/game codes and both checksums are stored.
 - A 512-byte copier header (file size % 1024 = 512) would be cut off as its own block so the body deduplicates with headerless dumps, and the RA hash is computed after it; the local collection contains none.
 - Most RA games without a No-Intro counterpart are hacks, translation patches (for example the RA sets for Bahamut Lagoon and Rushing Beat use English-patched ROMs) and subsets.
+- Satellaview (BS-X) `.bs` files found in the RetroAchievements SNES folder belong to a separate platform: they are skipped, listed in the update report, and left for a future Satellaview database.
 
 ## Contents
 
@@ -41,7 +42,7 @@ Change against 32 MiB groups on real data (first 16 family-ordered groups, 484 M
 | No-Intro DB Export + Dump Log 20261003-140326 | 4,365 archives, 5,457 file identities, 5,399 documented hardware assertions; Dump Log Verified 1,871 |
 | RetroAchievements (console 3) | 1,185 games with achievements: 1,089 with a local ROM (1,845 ROMs), 0 DAT only, 0 DB file only, 96 without a No-Intro counterpart |
 | Chinese names | 3,942 of 4,154 rows translated (2,030 unique); 3,909 local ROMs have a Chinese name |
-| Populated-database audit | 5,283 objects, 57 groups, 5,814 archive plans, all passed |
+| Populated-database audit | 5,243 objects, 57 groups, 5,774 archive plans, all passed |
 
 Every source ZIP is reproduced byte-for-byte from its TorrentZip plan (`v_file_checksums.exported_bytes_equal_source`).
 

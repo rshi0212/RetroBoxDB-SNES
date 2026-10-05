@@ -520,6 +520,45 @@ class RetuneTests(_Base):
             out = self.root / ('o' + name); self.db.export(fid, out); self.assertEqual(out.read_bytes(), data)
 
 
+class MaintenanceTests(_Base):
+    def test_small_new_family_joins_newest_group(self):
+        a = snes_rom(seed=81); self.solid_import([('A (USA).sfc', a)], 'A (USA)')
+        b = snes_rom(seed=82); self.loose_import('B (USA).sfc', b, 'B (USA)')
+        with self.db.c: r = self.db.compact_solid(workers=1)
+        self.assertEqual((r['groups_repacked'], r['groups_created']), (1, 0))
+        self.assertEqual(self.db.c.execute('SELECT count(*) FROM compression_groups').fetchone()[0], 1)
+        self.assertEqual(self.db.c.execute("SELECT group_concat(family_key) FROM solid_group_families").fetchone()[0], 'A (USA),B (USA)')
+        self.assertTrue(self.db.audit(archives=True)['ok'])
+
+    def test_retune_same_cap_consolidates_only(self):
+        retune = importlib.import_module('retune_db')
+        for i in range(3): self.solid_import([(f'C{i} (USA).sfc', snes_rom(seed=90 + i))], family=f'C{i}')
+        sizes = [r[0] for r in self.db.c.execute('SELECT size FROM compression_groups ORDER BY id')]
+        cap = 1 << 20; self.assertLessEqual(sizes[0] + sizes[1], cap); self.assertGreater(sum(sizes), cap)
+        with self.db.c:
+            for k in ('solid_group_max_bytes', 'solid_group_dictionary_bytes'): self.db.c.execute('UPDATE meta SET value=? WHERE key=?', (str(cap), k))
+        last = self.db.c.execute('SELECT id,encoded_sha256 FROM compression_groups ORDER BY id DESC LIMIT 1').fetchone(); self.db.c.close()
+        rep = retune.retune(self.path, 1, workers=1, eng=engine)
+        self.db = engine.DB(self.path)
+        self.assertEqual(rep['groups_after'], 2)
+        self.assertEqual(tuple(self.db.c.execute('SELECT id,encoded_sha256 FROM compression_groups WHERE id=?', (last[0],)).fetchone()), tuple(last))  # left alone
+        self.assertTrue(self.db.audit(archives=True)['ok'])
+
+    def test_shared_block_family_and_other_platform_files(self):
+        U = importlib.import_module('update_db')
+        a = snes_rom(seed=95); self.solid_import([('Orig (USA).sfc', a)], 'Orig (USA)')
+        hack = a[:-65536] + random.Random(5).randbytes(65536)  # a hack: last bank changed
+        raw = zip_of('Orig (USA) (Hack).sfc', hack); path = self.root / 'h.zip'; path.write_bytes(raw)
+        other = snes_rom(seed=96); raw2 = zip_of('New (USA).sfc', other); path2 = self.root / 'n.zip'; path2.write_bytes(raw2)
+        with self.db.c:
+            self.db.import_zip_bytes(path, raw, None, None, None); self.db.import_zip_bytes(path2, raw2, None, None, None)
+        oid = lambda n: self.db.c.execute('SELECT object_id FROM files WHERE original_name=?', (n,)).fetchone()[0]
+        self.assertEqual(U.shared_block_family(self.db, oid('Orig (USA) (Hack).sfc')), ('Orig (USA)', 'shared_blocks'))
+        self.assertIsNone(U.shared_block_family(self.db, oid('New (USA).sfc')))
+        self.assertIn('.fds', U.OTHER_PLATFORM_EXT['nes']); self.assertIn('.bs', U.OTHER_PLATFORM_EXT['snes'])
+        self.assertIn('.nes', U.OTHER_PLATFORM_EXT['fds'])
+
+
 class NesMigrationTests(unittest.TestCase):
     """v3 NES database (header recipes, headered/headerless bodies, v3 groups) -> storage v4."""
 

@@ -25,9 +25,9 @@ RA_ROOT = pathlib.Path('/mnt/MyShare/RetroAchievements')
 RA_FOLDERS = {'nes': 'RA - Nintendo Entertainment System', 'snes': 'RA - Super Nintendo Entertainment System', 'megadrive': 'RA - Sega Genesis',
               'gb': 'RA - Nintendo Game Boy', 'gbc': 'RA - Nintendo Game Boy Color', 'gba': 'RA - Nintendo Game Boy Advance',
               'fds': 'RA - Nintendo Entertainment System'}  # the RA NES set also holds the FDS disk images
-# Files of another platform found in a mixed folder are skipped and listed in the report (Famicom Disk System images
-# belong to a separate FDS database, not to NES).
-OTHER_PLATFORM_EXT = {'nes': {'.fds', '.qd'}, 'fds': {'.nes', '.unf', '.unif', '.nsf'}}
+# Files of another platform found in a mixed folder are skipped and listed in the report: Famicom Disk System images
+# belong to the FDS database, not NES; Satellaview (BS-X) .bs files are their own platform, not SNES.
+OTHER_PLATFORM_EXT = {'nes': {'.fds', '.qd'}, 'fds': {'.nes', '.unf', '.unif', '.nsf'}, 'snes': {'.bs'}}
 
 
 def log(*a): print(time.strftime('%H:%M:%S'), *a, flush=True)

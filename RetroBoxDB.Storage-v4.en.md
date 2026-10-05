@@ -4,20 +4,20 @@
 
 Each platform has one populated database (ROM data, kept locally) and one public Catalog (metadata only). All seven use the same engine and the same storage format (v4); per-platform differences in block size, group cap, header parsing and import path are expressed by the database's `meta` values and platform adapter code. Original sizes include the No-Intro folders and the RetroAchievements-curated ROM folders (see Contents).
 
-| Platform | Original size (ZIP / ROM files) | Populated database | Ratio (of ZIP / ROM) | Catalog | Single ROM (cold) | Single TorrentZip (cold) | Whole-set export |
+| Platform | Original size (ZIP / ROM files) | Populated database | Ratio (of ZIP / ROM) | Catalog | Single ROM (cold) | Single TorrentZip (cold) | Whole-set export by DAT |
 | --- | --- | ---: | ---: | ---: | --- | --- | --- |
-| NES | 4.35 GiB / 11.18 GiB | 536.8 MiB | 12.1% / 4.7% | 145.1 MiB | 2.325 s | 1.983 s | 32.3 MiB/s (24,912 files) |
-| SNES | 6.09 GiB / 10.90 GiB | 1.78 GiB | 29.3% / 16.4% | 53.7 MiB | 1.121 s | 1.398 s | 22.3 MiB/s (6,734 files) |
-| Mega Drive | 4.66 GiB / 9.61 GiB | 998.5 MiB | 20.9% / 10.2% | 44.7 MiB | 1.734 s | 2.087 s | 21.4 MiB/s (6,216 files) |
-| Game Boy | 401.1 MiB / 1.05 GiB | 177.7 MiB | 44.3% / 16.5% | 35.5 MiB | 1.594 s | 1.812 s | 21.4 MiB/s (3,392 files) |
-| Game Boy Color | 1.38 GiB / 4.42 GiB | 522.2 MiB | 37.1% / 11.5% | 45.5 MiB | 1.719 s | 1.857 s | 35.7 MiB/s (3,581 files) |
-| Game Boy Advance | 21.20 GiB / 44.24 GiB | 7.01 GiB | 33.1% / 15.9% | 57.8 MiB | 2.413 s | 2.682 s | 22.3 MiB/s (5,152 files) |
-| Famicom Disk System | 33.8 MiB / 82.7 MiB | 21.1 MiB | 62.4% / 25.5% | 9.5 MiB | 0.364 s | 0.334 s | 20.0 MiB/s (747 files) |
+| NES | 4.35 GiB / 11.18 GiB | 536.8 MiB | 12.1% / 4.7% | 145.1 MiB | 2.325 s | 1.983 s | 71.7 MiB/s (7,090 files) |
+| SNES | 6.06 GiB / 10.90 GiB | 1.76 GiB | 29.1% / 16.2% | 53.7 MiB | 1.094 s | 1.397 s | 28.0 MiB/s (4,261 files) |
+| Mega Drive | 4.66 GiB / 9.61 GiB | 998.5 MiB | 20.9% / 10.2% | 44.7 MiB | 1.734 s | 2.087 s | 18.8 MiB/s (3,398 files) |
+| Game Boy | 401.1 MiB / 1.05 GiB | 177.7 MiB | 44.3% / 16.5% | 35.5 MiB | 1.594 s | 1.812 s | 41.0 MiB/s (2,232 files) |
+| Game Boy Color | 1.38 GiB / 4.42 GiB | 522.2 MiB | 37.1% / 11.5% | 45.5 MiB | 1.719 s | 1.857 s | 56.2 MiB/s (2,503 files) |
+| Game Boy Advance | 21.20 GiB / 44.24 GiB | 7.01 GiB | 33.1% / 15.9% | 57.8 MiB | 2.413 s | 2.682 s | 25.1 MiB/s (3,676 files) |
+| Famicom Disk System | 33.8 MiB / 82.7 MiB | 21.1 MiB | 62.5% / 25.6% | 9.5 MiB | 0.364 s | 0.334 s | 30.4 MiB/s (405 files) |
 
 Catalogs are fresh SQLite files with empty `compression_groups`, `chunks` and `object_chunks` tables: no ROM data, original DAT/DB/Dump Log payloads or compressed data. Export performance was measured on this machine (Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, Python 3.14) while idle, with all checks included:
 
 - **Single file (cold)**: 100 random ROMs and 50 random TorrentZips (fixed seed), engine caches cleared before each export. The time is dominated by decoding the solid group up to the file; larger groups take longer, which is the cost of choosing them for compression.
-- **Whole-set export**: every ROM file in the database exported once in storage order with the bulk cache (up to 2 GiB of whole decoded groups); when all groups fit, each is decoded once, otherwise (NES) objects spanning groups make some groups decode again. This corresponds to exporting sets by DAT version, RA, 1G1R and similar criteria.
+- **Whole-set export by DAT**: `tools/export_set.py` exports every game of the newest DAT as plain ROMs (NES: headered DAT; FDS: FDS format), reading in storage order with the bulk cache (up to 2 GiB of whole decoded groups), checking each file against all DAT hashes, hashing and writing in a thread pool and syncing once at the end; process start and selection are included. A single-file export (`engine.py export`) fsyncs each file.
 
 ## How the storage was chosen
 
@@ -67,13 +67,13 @@ Other measurements:
 - Each block keeps its ID, size and SHA256; objects are assembled from blocks and exports check the full CRC32/MD5/SHA1/SHA256 set.
 - Reads decode a group only up to the bytes they need; every block is still checked against its SHA256. The decode cache holds two groups; an object whose blocks lie in several groups (for example a multicart) is read group by group, decoding each group once; audits and bulk exports raise the cache to at most 2 GiB (and at most the decoded size of all groups) and decode whole groups, so no partial decoder keeps its dictionary window.
 - NES keeps 16-byte headers separate from bodies, headered and headerless dumps share one body, and 8 KiB blocks follow header/PRG/CHR boundaries.
-- Source ZIPs are kept as checksums and regenerated from TorrentZip plans. The seven databases hold 49,621 source ZIPs (No-Intro and RetroAchievements sets, all TorrentZips); 49,621 of them are checked to reproduce byte-for-byte (`v_file_checksums.exported_bytes_equal_source`).
+- Source ZIPs are kept as checksums and regenerated from TorrentZip plans. The seven databases hold 49,581 source ZIPs (No-Intro and RetroAchievements sets, all TorrentZips); 49,581 of them are checked to reproduce byte-for-byte (`v_file_checksums.exported_bytes_equal_source`).
 - The format marker is `user_version=4`. The v3 engine refuses v4 files; the v4 engine reads v2, v3 and v4.
 
 | Platform | Block | Group cap / dictionary | Groups | Unique block bytes → stored |
 | --- | ---: | ---: | ---: | --- |
 | NES | 8 KiB | 256 MiB | 9 | 1.35 GiB → 344.7 MiB |
-| SNES | 64 KiB | 128 MiB | 57 | 5.43 GiB → 1.71 GiB |
+| SNES | 64 KiB | 128 MiB | 57 | 5.38 GiB → 1.70 GiB |
 | Mega Drive | 64 KiB | 256 MiB | 20 | 4.07 GiB → 940.5 MiB |
 | Game Boy | 64 KiB | 256 MiB | 5 | 631.2 MiB → 139.5 MiB |
 | Game Boy Color | 64 KiB | 256 MiB | 13 | 2.40 GiB → 469.2 MiB |
@@ -87,18 +87,18 @@ Source collections (`source_collections`, registered per folder; ZIP members car
 | | NES | SNES | Mega Drive | Game Boy | Game Boy Color | Game Boy Advance | Famicom Disk System |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | No-Intro (ZIPs / size) | 21,792 / 4.12 GiB | 4,898 / 3.99 GiB | 5,281 / 3.93 GiB | 2,671 / 295.8 MiB | 3,006 / 1.06 GiB | 3,946 / 14.42 GiB | 720 / 32.4 MiB |
-| RetroAchievements sets (ZIPs / size) | 1,969 / 229.8 MiB | 1,876 / 2.09 GiB | 934 / 753.3 MiB | 720 / 105.3 MiB | 575 / 326.7 MiB | 1,206 / 6.78 GiB | 27 / 1.4 MiB |
+| RetroAchievements sets (ZIPs / size) | 1,969 / 229.8 MiB | 1,836 / 2.07 GiB | 934 / 753.3 MiB | 720 / 105.3 MiB | 575 / 326.7 MiB | 1,206 / 6.78 GiB | 27 / 1.4 MiB |
 
 | | NES | SNES | Mega Drive | Game Boy | Game Boy Color | Game Boy Advance | Famicom Disk System |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Local ZIPs | 23,761 | 6,774 | 6,215 | 3,391 | 3,581 | 5,152 | 747 |
+| Local ZIPs | 23,761 | 6,734 | 6,215 | 3,391 | 3,581 | 5,152 | 747 |
 | ROM records | 18,414 | 5,239 | 3,959 | 2,538 | 2,784 | 4,143 | 703 |
 | Games / releases | 3,477 / 7,385 | 1,996 / 4,329 | 1,581 / 3,503 | 1,419 / 2,299 | 1,576 / 2,622 | 1,901 / 3,750 | 307 / 408 |
 | Local ROMs in no DAT | 2,849 | 978 | 561 | 306 | 279 | 467 | 9 |
 
 Every local Parent-Clone DAT version is imported and scanned; `dat_changes` diffs each older version against the newest and older DAT entries join the newest DAT's release through that diff. Platforms with several DAT formats (NES headered/headerless, FDS FDS/QD) diff each format against its own older versions; the primary format (first in the list) creates games and releases, and entries of other formats join the primary release of the same name, else the game of their parent.
 
-The RetroAchievements-curated ROM folders (`/mnt/MyShare/RetroAchievements/RA - <platform>`) are imported like the No-Intro folders: ROMs already stored only gain file records and a source link; new ROMs (hacks, translations, homebrew, versions No-Intro does not list) are stored with block deduplication. A ROM outside every DAT joins the family of the stored ROMs it shares the most blocks with (`object_families.basis='shared_blocks'`; most hacks land next to their original), else a title family. The RA NES folder also holds FDS disk images; the NES import skips and reports them and the FDS database imports them.
+The RetroAchievements-curated ROM folders (`/mnt/MyShare/RetroAchievements/RA - <platform>`) are imported like the No-Intro folders: ROMs already stored only gain file records and a source link; new ROMs (hacks, translations, homebrew, versions No-Intro does not list) are stored with block deduplication. A ROM outside every DAT joins the family of the stored ROMs it shares the most blocks with (`object_families.basis='shared_blocks'`; most hacks land next to their original), else a title family. The RA NES folder also holds FDS disk images; the NES import skips and reports them and the FDS database imports them. Satellaview (BS-X, `.bs`) files in the RA SNES folder belong to a separate platform: the SNES import skips and reports them for a future Satellaview database.
 
 - **NES** (2 DATs): 20260713-141345: 7,100/7,288; 20261002-002752: 7,095/7,390
 - **SNES** (2 DATs): 20260710-203222: 4,255/4,318; 20261003-140326: 4,261/4,331
@@ -152,4 +152,4 @@ RA public-API snapshots (`API_GetGameList`) are stored without credentials. Each
 
 The handling of the 2026-10-04 audit findings is recorded in [reports/audit-resolution-20261004.md](reports/audit-resolution-20261004.md). `engine.py` and the other `resources` entries are executable code; run them only from a database you built or a Release asset whose SHA256 you verified.
 
-Populated-database audits: NES 19,069 objects / 9 groups / 25,368 archive plans; SNES 5,283 objects / 57 groups / 5,814 archive plans; Mega Drive 3,963 objects / 20 groups / 5,367 archive plans; Game Boy 2,546 objects / 5 groups / 2,776 archive plans; Game Boy Color 2,791 objects / 13 groups / 2,931 archive plans; Game Boy Advance 4,149 objects / 123 groups / 4,396 archive plans; Famicom Disk System 712 objects / 1 groups / 728 archive plans; all passed.
+Populated-database audits: NES 19,069 objects / 9 groups / 25,368 archive plans; SNES 5,243 objects / 57 groups / 5,774 archive plans; Mega Drive 3,963 objects / 20 groups / 5,367 archive plans; Game Boy 2,546 objects / 5 groups / 2,776 archive plans; Game Boy Color 2,791 objects / 13 groups / 2,931 archive plans; Game Boy Advance 4,149 objects / 123 groups / 4,396 archive plans; Famicom Disk System 712 objects / 1 groups / 728 archive plans; all passed.

@@ -6,11 +6,11 @@
 
 | 项目 | 数值 |
 | --- | --- |
-| 原始大小 | 源 ZIP 6,774 个，6.09 GiB（No-Intro 4,898 个，RetroAchievements 集合 1,876 个）；解压后 ROM 6,734 个，10.90 GiB |
-| 入库后大小 | 完整库 1.78 GiB；公开 Catalog 53.7 MiB（不含 ROM 数据） |
-| 比例 | 完整库为原 ZIP 的 29.3%，为解压后 ROM 总量的 16.4% |
+| 原始大小 | 源 ZIP 6,734 个，6.06 GiB（No-Intro 4,898 个，RetroAchievements 集合 1,836 个）；解压后 ROM 6,734 个，10.90 GiB |
+| 入库后大小 | 完整库 1.76 GiB；公开 Catalog 53.7 MiB（不含 ROM 数据） |
+| 比例 | 完整库为原 ZIP 的 29.1%，为解压后 ROM 总量的 16.2% |
 | 使用的技术 | 存储 v4：64 KiB 块按 SHA256 去重，按 No-Intro 游戏族顺序装入最大 128 MiB 的 LZMA2 实体组（字典 128 MiB）；逐块 SHA256、逐对象 CRC32／MD5／SHA1／SHA256 校验；源 ZIP 由 TorrentZip 配方逐字节重建 |
-| 导出性能 | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz，空闲负载，Python 3.14.4，含全部校验。全集合顺序导出（6,734 个 ROM 文件，每组解压一次）：22.3 MiB/s，平均 74 毫秒／个；单个文件冷缓存（每次清空缓存，需解压所在组的前段）：ROM 平均 1.121 秒，TorrentZip 平均 1.398 秒 |
+| 导出性能 | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz，空闲负载，Python 3.14.4，含全部校验。按最新 DAT 整套导出（`export_set.py`，4,261 个文件，逐个按 DAT 哈希校验）：28.0 MiB/s，平均 52 毫秒／个；单个文件冷缓存（每次清空缓存，需解压所在组的前段）：ROM 平均 1.094 秒，TorrentZip 平均 1.397 秒 |
 
 ## 下载与说明
 
@@ -29,6 +29,7 @@
 - 内部头部：在 LoROM 0x7FC0、HiROM 0xFFC0、ExLoROM、ExHiROM 四处按校验和互补、映射模式、标题、ROM 大小字节和复位向量打分选位置；分数不足的记为 `unclassified`（多为 Beta、原型、盗版卡和增强芯片固件）。保存映射模式、FastROM、芯片组与协处理器、SRAM、地区、厂商／游戏代码和两种校验和。
 - 512 字节 copier 头（文件大小 %1024 = 512）会单独切成一块，使正文与无头版本去重，RA 哈希也在去头后计算；本地收藏中没有这类文件。
 - 无 No-Intro 对应的 RA 游戏主要是 Hack、翻译补丁版（如 RA 的 Bahamut Lagoon、Rushing Beat 套装使用英译补丁 ROM）和 Subset。
+- RetroAchievements SNES 目录中的 Satellaview（BS-X，`.bs`）文件属于独立平台：导入时跳过并列入更新报告，留待以后单独建库。
 
 ## 内容
 
@@ -41,7 +42,7 @@
 | No-Intro DB Export＋Dump Log 20261003-140326 | 4,365 个档案、5,457 个文件身份、5,399 条有文档的硬件声明；Dump Log Verified 1,871 |
 | RetroAchievements（console 3） | 有成就的游戏 1,185 个：本地有 ROM 1,089（1,845 个 ROM），仅 DAT 有 0，仅 DB 文件 0，无 No-Intro 对应 96 |
 | 中文名 | 4,154 条记录中 3,942 条有中文（2,030 个唯一名）；本地 ROM 3,909 个有中文名 |
-| 完整库审计 | 5,283 个对象、57 个组、5,814 个 ZIP 配方，全部通过 |
+| 完整库审计 | 5,243 个对象、57 个组、5,774 个 ZIP 配方，全部通过 |
 
 源 ZIP 均可由 TorrentZip 配方逐字节重建（`v_file_checksums.exported_bytes_equal_source`）。
 

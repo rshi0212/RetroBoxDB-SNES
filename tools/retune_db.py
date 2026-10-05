@@ -61,7 +61,7 @@ def retune(db_path, group_mib, workers=None, dry_run=False, eng=None):
     if cap == old_cap: plan = [m for m in plan if len(m) > 1]
     if not plan: log('nothing to merge'); return {'groups_before': len(groups), 'groups_after': len(groups)}
     before = db.c.execute("SELECT count(*),sum(length(data)) FROM compression_groups WHERE codec='lzma2-solid'").fetchone()
-    log(f'{len(groups)} groups -> {len(plan)} groups of <= {a.group_mib} MiB')
+    log(f'{len(groups)} groups -> {len(groups) - sum(len(m) - 1 for m in plan)} groups of <= {a.group_mib} MiB ({len(plan)} merged groups to encode)')
     if a.dry_run: return {'groups_before': len(groups), 'groups_after': len(plan)}
     workers = a.workers or max(1, min(4, (8 << 30) // (12 * cap)))
     report = {'old_group_cap': old_cap, 'new_group_cap': cap, 'old_dictionary': old_dict, 'new_dictionary': cap,

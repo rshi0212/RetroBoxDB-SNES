@@ -33,7 +33,7 @@ db = eng.DB(db_path)
 c = db.c
 
 platform = c.execute('SELECT code FROM platforms WHERE id=1').fetchone()[0]
-CONSOLE = {'nes': 7, 'snes': 3, 'megadrive': 1, 'gb': 4, 'gbc': 6, 'gba': 5}[platform]
+CONSOLE = {'nes': 7, 'snes': 3, 'megadrive': 1, 'gb': 4, 'gbc': 6, 'gba': 5, 'fds': 81}[platform]
 ds = c.execute("SELECT id, version FROM dat_sets WHERE mode=? ORDER BY version DESC, id DESC LIMIT 1",
                ('headered' if platform == 'nes' else 'unspecified',)).fetchone()
 games = c.execute("SELECT id, name, cloneof FROM dat_games WHERE dat_set_id=? ORDER BY ordinal", (ds['id'],)).fetchall()

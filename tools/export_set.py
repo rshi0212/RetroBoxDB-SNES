@@ -16,7 +16,7 @@ Every written member is re-hashed against all checksums of its DAT entry; Torren
 with the engine's canonical encoder and compared with the registered archive plan when one exists.
 OUT/export-manifest.json records the criteria, database identity and every file's checksums.
 """
-import argparse, collections, datetime, hashlib, io, json, pathlib, re, sqlite3, sys, types, zipfile, zlib
+import argparse, collections, concurrent.futures, datetime, hashlib, io, json, os, pathlib, re, sqlite3, sys, types, zipfile, zlib
 
 REV = re.compile(r'\((?:Rev|v)\s*([0-9A-Za-z.]+)\)')
 
@@ -139,33 +139,57 @@ def main():
     if hasattr(db, 'set_bulk_cache') and len(selection) > 1: db.set_bulk_cache()
     far = (float('inf'), 0)
     selection.sort(key=lambda gm: min((pos.get(oid, far) for _, oid in gm[1]), default=far))
-    for g, members in selection:
-        try:
-            sub = folder(g); base = a.out / sub if sub else a.out; base.mkdir(parents=True, exist_ok=True)
-            datas = []
-            for t, oid in members:
-                data = b''.join(db.stream(oid)); h = hashes(data)
-                bad = [k for k in ('size', 'crc32', 'md5', 'sha1', 'sha256') if t[k] is not None and str(t[k]).lower() != str(h[k])]
-                if bad: raise ValueError(f'{t["name"]}: differs from DAT in {bad}')
-                datas.append((eng.safe_name(t['name']), data, h))
-            if a.container == 'rom':
-                for name, data, h in datas:
-                    p = base / name; p.parent.mkdir(parents=True, exist_ok=True)
-                    with p.open('xb') as f: f.write(data)
-                    report['files'].append({'path': str(p.relative_to(a.out)), 'game': g['name'], **h})
-            else:
-                z = eng.make_torrentzip([(n, d) for n, d, _ in datas]); h = hashes(z)
-                desc = [[n, hh['sha256']] for n, _, hh in sorted(datas, key=lambda x: x[0].lower())]
-                fp = hashlib.sha256(eng.js({'profile': 'torrentzip-classic-v1', 'members': desc}).encode()).hexdigest()
-                plan = c.execute('SELECT * FROM archive_plans WHERE fingerprint=?', (fp,)).fetchone()
-                if plan and any(plan[k] != h[k] for k in h): raise ValueError('TorrentZip differs from the registered archive plan')
-                with zipfile.ZipFile(io.BytesIO(z)) as zz:
-                    if not zz.comment.startswith(b'TORRENTZIPPED-') or zz.testzip() is not None: raise ValueError('TorrentZip structure check failed')
-                p = base / (eng.safe_name(g['name']) + '.zip')
-                with p.open('xb') as f: f.write(z)
-                report['files'].append({'path': str(p.relative_to(a.out)), 'game': g['name'], 'registered_plan': bool(plan), **h})
-            report['exported'] += 1
-        except Exception as e: report['errors'].append({'game': g['name'], 'error': repr(e)})
+    hash_of = getattr(eng, 'fast_hashes', hashes)
+
+    def write_game(g, base, datas, plan):
+        """Runs in a worker thread: every member is checked against all DAT hashes, then written (no SQLite access)."""
+        out = []
+        for t, name, data in datas:
+            h = hash_of(data)
+            bad = [k for k in ('size', 'crc32', 'md5', 'sha1', 'sha256') if t[k] is not None and str(t[k]).lower() != str(h[k])]
+            if bad: raise ValueError(f'{t["name"]}: differs from DAT in {bad}')
+            out.append((name, data, h))
+        if a.container == 'rom':
+            files = []
+            for name, data, h in out:
+                path = base / name; path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open('xb') as f: f.write(data)
+                files.append({'path': str(path.relative_to(a.out)), 'game': g['name'], **h})
+            return files, [base / n for n, _, _ in out]
+        z = eng.make_torrentzip([(n, d) for n, d, _ in out]); h = hash_of(z)
+        if plan and any(plan[k] != h[k] for k in ('size', 'crc32', 'md5', 'sha1', 'sha256')): raise ValueError('TorrentZip differs from the registered archive plan')
+        with zipfile.ZipFile(io.BytesIO(z)) as zz:
+            if not zz.comment.startswith(b'TORRENTZIPPED-') or zz.testzip() is not None: raise ValueError('TorrentZip structure check failed')
+        path = base / (eng.safe_name(g['name']) + '.zip')
+        with path.open('xb') as f: f.write(z)
+        return [{'path': str(path.relative_to(a.out)), 'game': g['name'], 'registered_plan': bool(plan), **h}], [path]
+
+    # The main thread decodes (storage order, bulk cache); hashing, TorrentZip encoding and writing run in a thread pool
+    # with a bounded queue. Files are flushed to disk once at the end instead of one fsync per file.
+    written = []; pending = collections.deque(); workers = min(8, os.cpu_count() or 4)
+
+    def collect(n):
+        while len(pending) > n:
+            g, fut = pending.popleft()
+            try:
+                files, paths = fut.result(); report['files'] += files; written.extend(paths); report['exported'] += 1
+            except Exception as e: report['errors'].append({'game': g['name'], 'error': repr(e)})
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        for g, members in selection:
+            try:
+                sub = folder(g); base = a.out / sub if sub else a.out; base.mkdir(parents=True, exist_ok=True)
+                datas = [(t, eng.safe_name(t['name']), b''.join(db.stream(oid))) for t, oid in members]
+                plan = None
+                if a.container != 'rom':  # registered plan found through the immutable object checksums of the members
+                    desc = sorted(([eng.safe_name(t['name']), c.execute('SELECT sha256 FROM objects WHERE id=?', (oid,)).fetchone()[0]] for t, oid in members), key=lambda x: x[0].lower())
+                    fp = hashlib.sha256(eng.js({'profile': 'torrentzip-classic-v1', 'members': desc}).encode()).hexdigest()
+                    row = c.execute('SELECT size,crc32,md5,sha1,sha256 FROM archive_plans WHERE fingerprint=?', (fp,)).fetchone()
+                    plan = dict(row) if row else None
+                pending.append((g, pool.submit(write_game, g, base, datas, plan)))
+            except Exception as e: report['errors'].append({'game': g['name'], 'error': repr(e)})
+            collect(workers * 2)
+        collect(0)
+    if written: os.sync()  # one durable flush for the whole export instead of one fsync per file
     db.c.close(); report['files'].sort(key=lambda r: r['path'])
     summary = {k: (len(v) if isinstance(v, list) else v) for k, v in report.items() if k != 'files'}
     if not a.report_only: (a.out / 'export-manifest.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
