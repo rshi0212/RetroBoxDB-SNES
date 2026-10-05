@@ -1,18 +1,18 @@
 {
-  "tag": "snes-catalog-20261005-2",
+  "tag": "snes-catalog-20261005-3",
   "title": "SNES Catalog: RetroAchievements ROM set and source collections",
   "platform": "snes",
   "catalog_name": "RetroBoxDB.SNES.Catalog.sqlite",
-  "base_url": "https://github.com/rshi0212/RetroBoxDB-SNES/releases/download/snes-catalog-base-20261005-2/RetroBoxDB.SNES.Catalog.sqlite",
-  "base_sha256": "62b9b111a710ef65fc78b30eb9f9e3e1df1e2179c5ba84076ae2f5470f6f3efc",
+  "base_url": "https://github.com/rshi0212/RetroBoxDB-SNES/releases/download/snes-catalog-base-20261005-3/RetroBoxDB.SNES.Catalog.sqlite",
+  "base_sha256": "1e37e235535273a05bc472875abb422d5e6b82560a3d5bab684f4f37e3a1ed5c",
   "data_table_sha256": {
     "archive_entries": {
-      "rows": 5814,
-      "sha256": "12e9d5e38e51fb580429b449200818a6e9ee77fed7490b3a3b4f09a6efed044d"
+      "rows": 5774,
+      "sha256": "63876fb136cf94ca908e5d9effdb02ee25eedf919d6310dc830db93769a81bfa"
     },
     "archive_plans": {
-      "rows": 5814,
-      "sha256": "1964a7f314930e7ee6e15cf9f94ae55f6a0bdbeea388faddf73e67c505a1736e"
+      "rows": 5774,
+      "sha256": "0e7a5fb20631fcec2051bc7c200bf939019a218112cad577b16b94a26884670f"
     },
     "archive_profiles": {
       "rows": 1,
@@ -44,19 +44,19 @@
     },
     "events": {
       "rows": 25,
-      "sha256": "dcdedde86351280f3dd8358b45ddaf9132a59da271a3492349e88277ab8fecf6"
+      "sha256": "65c5d99b9fbe8882a22033ccb0232c6b05c4fef183c6b63d4e8c2c1a43240d58"
     },
     "fds_hardware": {
       "rows": 0,
       "sha256": "375c736a39de19330edc6ac46a26acccfda18a13e70ba87f22f6d39da91d9c42"
     },
     "file_archives": {
-      "rows": 11043,
-      "sha256": "b426f12dcddb245975936c43f1c168681181e1a1ef237a399a48e336827c3071"
+      "rows": 11003,
+      "sha256": "2c4019ed1c0217831b5baaeaf0c5d30041cd33c5592c4e372561012931ffccd7"
     },
     "files": {
-      "rows": 17821,
-      "sha256": "a74899e7f7c1dbbb0a124074a6465753aed1bf15ff350793de1f2859750d1677"
+      "rows": 17741,
+      "sha256": "17f4a5624c088022365bd19f242b695f900a3b3d479648579864c4fd6a21c8ac"
     },
     "frontend_fields": {
       "rows": 40,
@@ -124,7 +124,7 @@
     },
     "naming_decisions": {
       "rows": 1075,
-      "sha256": "66715dab59ee080ac3ba2901e4e451bebffd5938da9c4cb5cd59a05d790ffc90"
+      "sha256": "8fcc16368414ebf78e34aff46726f3c9bf25544fb6480528a785c0031d881a26"
     },
     "nes_hardware": {
       "rows": 0,
@@ -192,11 +192,11 @@
     },
     "object_families": {
       "rows": 5239,
-      "sha256": "dc3370bcb31ddf82045c642e2255877803628c98279e6edbd1cd4bff522d7aae"
+      "sha256": "79806f8704ecc1f14c8b84ae69dfdd665fe55ba7d42c133632ebf691b98041e2"
     },
     "objects": {
-      "rows": 11097,
-      "sha256": "935127772f53b8f39e472f7d143daf1f833f060d62da0f435a4b0f4a8be392c7"
+      "rows": 11017,
+      "sha256": "279ca1545b9cde858bede42082861d959ed793b14fd6cca7079a75dae8f52624"
     },
     "package_members": {
       "rows": 8516,
@@ -220,7 +220,7 @@
     },
     "ra_snapshots": {
       "rows": 2,
-      "sha256": "7f617971922b03e0cb598357f9efa6fa87446efe872f394066cc8a64cca6c5be"
+      "sha256": "e3f5311d5838c5b8f068225f41f3b805f3f838e4e36956f3ec1eac52d85fea1b"
     },
     "release_dat_games": {
       "rows": 8647,
@@ -252,7 +252,7 @@
     },
     "roms": {
       "rows": 5239,
-      "sha256": "6dafa5fe08f28916e5a809deff188ea71e883d1302cff1a61f3ff29d4751811c"
+      "sha256": "abfc63a515b257a0295f3dcba8b978ddd25f847311abe11cf648f852501dd7ce"
     },
     "scrape_records": {
       "rows": 0,
@@ -276,7 +276,7 @@
     },
     "source_collections": {
       "rows": 4,
-      "sha256": "4033ea53adfc8addecb3dffaaf11b43503e133c28a0ec11322fabc614b0cffa1"
+      "sha256": "9ca07fbb43b2b14d0a8d7cbf880af011598a3a4db0dafb668a150f99b4d9273c"
     },
     "sources": {
       "rows": 12158,
@@ -288,7 +288,7 @@
     },
     "validations": {
       "rows": 8516,
-      "sha256": "ed36474ba2dcb7bf6d7d731bcdf501a02dafee8fd7fb223aa839aae333f28626"
+      "sha256": "d06c22d7fa35b5a3ac8b3a5af7bf2a0fa92e3a40813c5bf7596a6c116fcf9e8d"
     }
   },
   "resources": {
