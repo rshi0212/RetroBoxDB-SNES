@@ -1,18 +1,18 @@
 {
-  "tag": "snes-catalog-20261005",
-  "title": "SNES Catalog: storage v4 retuned to 128 MiB groups, unified engine",
+  "tag": "snes-catalog-20261005-2",
+  "title": "SNES Catalog: RetroAchievements ROM set and source collections",
   "platform": "snes",
   "catalog_name": "RetroBoxDB.SNES.Catalog.sqlite",
-  "base_url": "https://github.com/rshi0212/RetroBoxDB-SNES/releases/download/snes-catalog-base-20261005/RetroBoxDB.SNES.Catalog.sqlite",
-  "base_sha256": "04d366d9885c9d153581fb1ebc01f8cd6f21bb2138cca86b76342f7eed9a17d7",
+  "base_url": "https://github.com/rshi0212/RetroBoxDB-SNES/releases/download/snes-catalog-base-20261005-2/RetroBoxDB.SNES.Catalog.sqlite",
+  "base_sha256": "62b9b111a710ef65fc78b30eb9f9e3e1df1e2179c5ba84076ae2f5470f6f3efc",
   "data_table_sha256": {
     "archive_entries": {
-      "rows": 4813,
-      "sha256": "4f489c00b43e7638b773409c6ece2ee044e5c760921c300496ba1b4e51124d82"
+      "rows": 5814,
+      "sha256": "12e9d5e38e51fb580429b449200818a6e9ee77fed7490b3a3b4f09a6efed044d"
     },
     "archive_plans": {
-      "rows": 4813,
-      "sha256": "f4e2a17fee0f378c457a8883ad865039892874b321a213fa0adf0cf3c15df08c"
+      "rows": 5814,
+      "sha256": "1964a7f314930e7ee6e15cf9f94ae55f6a0bdbeea388faddf73e67c505a1736e"
     },
     "archive_profiles": {
       "rows": 1,
@@ -43,16 +43,20 @@
       "sha256": "800cc3f99ea5fed8cc540ca094208f018acf46dbbf635fcdea815b6f1e6b9bd8"
     },
     "events": {
-      "rows": 18,
-      "sha256": "216d49c2e916c881b242b0b9292a1d03476779800c5e1921d3aac88d52a3a2d5"
+      "rows": 25,
+      "sha256": "dcdedde86351280f3dd8358b45ddaf9132a59da271a3492349e88277ab8fecf6"
+    },
+    "fds_hardware": {
+      "rows": 0,
+      "sha256": "375c736a39de19330edc6ac46a26acccfda18a13e70ba87f22f6d39da91d9c42"
     },
     "file_archives": {
-      "rows": 9167,
-      "sha256": "85c24add9547a14aa74386cc2b4fbb9c8ee3c2d5e850abf5c2c7bf99b18c9059"
+      "rows": 11043,
+      "sha256": "b426f12dcddb245975936c43f1c168681181e1a1ef237a399a48e336827c3071"
     },
     "files": {
-      "rows": 14069,
-      "sha256": "3cb7dce3afbc62909a51545cb82f3d53aee5d08b558af91ebecf7f474e7f563c"
+      "rows": 17821,
+      "sha256": "a74899e7f7c1dbbb0a124074a6465753aed1bf15ff350793de1f2859750d1677"
     },
     "frontend_fields": {
       "rows": 40,
@@ -116,11 +120,11 @@
     },
     "meta": {
       "rows": 23,
-      "sha256": "8c201416ec447b41312b9a71dc9b8341b4d0ffdbb15e23d1c06c96d756613399"
+      "sha256": "ede65e50e10bb567603a9cf0b2cb3b17796a356ef7c53930f19069bc042dd91e"
     },
     "naming_decisions": {
-      "rows": 1040,
-      "sha256": "1ca2fd4b811537eeec768faafcb3dc956eb8e2b0c17ab362cd4b54102fa9c1ca"
+      "rows": 1075,
+      "sha256": "66715dab59ee080ac3ba2901e4e451bebffd5938da9c4cb5cd59a05d790ffc90"
     },
     "nes_hardware": {
       "rows": 0,
@@ -187,12 +191,12 @@
       "sha256": "fd5a7a33f506e106df266f6402be4ab11593068d2660fc8a3013ceb920dcf5f9"
     },
     "object_families": {
-      "rows": 4293,
-      "sha256": "1c94b155365977bbce3dd2f950d0a3517267ef906fbb703cd6d188f230b2fdb4"
+      "rows": 5239,
+      "sha256": "dc3370bcb31ddf82045c642e2255877803628c98279e6edbd1cd4bff522d7aae"
     },
     "objects": {
-      "rows": 9110,
-      "sha256": "090bab398502552d912453d79d130c00193e715717e778ec3d978964298eee78"
+      "rows": 11097,
+      "sha256": "935127772f53b8f39e472f7d143daf1f833f060d62da0f435a4b0f4a8be392c7"
     },
     "package_members": {
       "rows": 8516,
@@ -207,16 +211,16 @@
       "sha256": "efde33c46beb0b485262aa2267fcae7dddb8850c345cbc05789c68ce70361519"
     },
     "ra_games": {
-      "rows": 2832,
-      "sha256": "451a1cc57a43860657cda44a3714d25292e7c2a8ccca48ace08e9bc8cc85697d"
+      "rows": 5664,
+      "sha256": "c004bd32e0f64a909bf9d642dc25621ab6ecaa37a189f20581a6babd9b29df0f"
     },
     "ra_hashes": {
-      "rows": 5214,
-      "sha256": "68bb71f03193bd4a38e57ddbe9e48683418c594f2c543b58aed1f1d4d4a4ab36"
+      "rows": 10428,
+      "sha256": "d4596762d7f59f09eaecbdffe0e129b1ad4077fd0db50245dc4063c18e0df84f"
     },
     "ra_snapshots": {
-      "rows": 1,
-      "sha256": "12a52acaf97209efa5b36277b9978b8149cc1de9c2da7c5913af0d3e2eaacc41"
+      "rows": 2,
+      "sha256": "7f617971922b03e0cb598357f9efa6fa87446efe872f394066cc8a64cca6c5be"
     },
     "release_dat_games": {
       "rows": 8647,
@@ -235,20 +239,20 @@
       "sha256": "3c642e0d29d1e5dab60d2328c3d565be7c0acc7c70e44cb33566db7e538d7ffa"
     },
     "rom_components": {
-      "rows": 4293,
-      "sha256": "719cc517d941d5a930bbd11b56aa70c03bd4c847880619c36f224b7ad0595fb4"
+      "rows": 5239,
+      "sha256": "8a64b16f7a878ad3c58ddc9c1af311a89c81a3a6118f2a627120ff01f07666a5"
     },
     "rom_ra_hashes": {
-      "rows": 4293,
-      "sha256": "16e502215ebfa757112c2275cfc3d709fc8eb90b153e52a1f11a2c827cd7ee4e"
+      "rows": 5239,
+      "sha256": "c6ae4d1e5df6acfbd0614c674c13fa206c2ddcd3c13ae9a487f6468d824dd44c"
     },
     "rom_releases": {
       "rows": 4261,
       "sha256": "a73ff0e02bdbeb9898c5dfbf3eccc0de29fc4343521bc18fa8fbefa3540b5cc9"
     },
     "roms": {
-      "rows": 4293,
-      "sha256": "9f2467e7593e0e8f2da8a3b82430c5b6ff8e7995938084553c271a27c23f9da6"
+      "rows": 5239,
+      "sha256": "6dafa5fe08f28916e5a809deff188ea71e883d1302cff1a61f3ff29d4751811c"
     },
     "scrape_records": {
       "rows": 0,
@@ -263,12 +267,16 @@
       "sha256": "ad358de51eea41e843cd0757449d5bc7ed51b790e76768b9651051451c16bf86"
     },
     "snes_hardware": {
-      "rows": 4092,
-      "sha256": "3e73841dd52915c367aed930f925560db9bef2292664cfc9483709d180484562"
+      "rows": 5035,
+      "sha256": "c23c628f6e76707514ce403ef5b09ef279377b0ac991b1328103ecb2a598b593"
     },
     "solid_group_families": {
-      "rows": 2007,
-      "sha256": "de8ca6fc599e2daedcec03e5feb4dd66f9b6dc47886178497b496d93c99356ff"
+      "rows": 2421,
+      "sha256": "559eb9cec9adf44c368663378c8e202d31e83af2751fafb416f8bf469313ab18"
+    },
+    "source_collections": {
+      "rows": 4,
+      "sha256": "4033ea53adfc8addecb3dffaaf11b43503e133c28a0ec11322fabc614b0cffa1"
     },
     "sources": {
       "rows": 12158,
@@ -280,7 +288,7 @@
     },
     "validations": {
       "rows": 8516,
-      "sha256": "8bb0888ede36c9265bd63def09e3719d21aa50605b9feffe1da944d09e0fa6e6"
+      "sha256": "ed36474ba2dcb7bf6d7d731bcdf501a02dafee8fd7fb223aa839aae333f28626"
     }
   },
   "resources": {
@@ -372,6 +380,10 @@
       "kind": "json",
       "path": "assessment/data/storage-experiment-gb-gbc-gba.json"
     },
+    "storage-experiment-fds": {
+      "kind": "json",
+      "path": "assessment/data/storage-experiment-fds.json"
+    },
     "storage-curves": {
       "kind": "json",
       "path": "assessment/data/storage-curves.json"
@@ -387,6 +399,10 @@
     "ra-report-games.csv": {
       "kind": "csv",
       "path": "reports/ra-snes-games.csv"
+    },
+    "ra-report-missing.csv": {
+      "kind": "csv",
+      "path": "reports/ra-snes-missing.csv"
     }
   },
   "repo_tests": [
