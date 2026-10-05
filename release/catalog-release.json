@@ -1,10 +1,10 @@
 {
-  "tag": "snes-catalog-20261005-3",
-  "title": "SNES Catalog: RetroAchievements ROM set and source collections",
+  "tag": "snes-catalog-20261006",
+  "title": "SNES Catalog: Satellaview files moved to their own database, cross-database RetroAchievements links",
   "platform": "snes",
   "catalog_name": "RetroBoxDB.SNES.Catalog.sqlite",
-  "base_url": "https://github.com/rshi0212/RetroBoxDB-SNES/releases/download/snes-catalog-base-20261005-3/RetroBoxDB.SNES.Catalog.sqlite",
-  "base_sha256": "1e37e235535273a05bc472875abb422d5e6b82560a3d5bab684f4f37e3a1ed5c",
+  "base_url": "https://github.com/rshi0212/RetroBoxDB-SNES/releases/download/snes-catalog-base-20261006/RetroBoxDB.SNES.Catalog.sqlite",
+  "base_sha256": "ba4a21c423f6618c5914a9e67f16dc771a880c5b769743d0fab9533d5c7a318b",
   "data_table_sha256": {
     "archive_entries": {
       "rows": 5774,
@@ -17,6 +17,10 @@
     "archive_profiles": {
       "rows": 1,
       "sha256": "a8247ca6bd7302d45bbf2e6dfe2fae5b8624f1333cc6a4087cd18bac6e463690"
+    },
+    "bsx_hardware": {
+      "rows": 0,
+      "sha256": "44f335cb2b7c8f195e63c47f303f37dadc7e880771c4b23baef96323d6cb90d3"
     },
     "chunks": {
       "rows": 0,
@@ -43,8 +47,8 @@
       "sha256": "800cc3f99ea5fed8cc540ca094208f018acf46dbbf635fcdea815b6f1e6b9bd8"
     },
     "events": {
-      "rows": 25,
-      "sha256": "65c5d99b9fbe8882a22033ccb0232c6b05c4fef183c6b63d4e8c2c1a43240d58"
+      "rows": 27,
+      "sha256": "8bb3bcf878d2fee63af52a775eb071b572c473aa70d396fb30a97e5759b03012"
     },
     "fds_hardware": {
       "rows": 0,
@@ -383,6 +387,10 @@
     "storage-experiment-fds": {
       "kind": "json",
       "path": "assessment/data/storage-experiment-fds.json"
+    },
+    "storage-experiment-satellaview": {
+      "kind": "json",
+      "path": "assessment/data/storage-experiment-satellaview.json"
     },
     "storage-curves": {
       "kind": "json",
