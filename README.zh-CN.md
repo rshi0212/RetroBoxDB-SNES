@@ -6,18 +6,18 @@
 
 | 项目 | 数值 |
 | --- | --- |
-| 原始大小 | No-Intro ZIP 4,898 个，3.99 GiB；解压后 ROM 4,898 个，6.97 GiB |
-| 入库后大小 | 完整库 1.54 GiB；公开 Catalog 48.5 MiB（不含 ROM 数据） |
-| 比例 | 完整库为原 ZIP 的 38.5%，为解压后 ROM 总量的 22.0% |
+| 原始大小 | 源 ZIP 6,774 个，6.09 GiB（No-Intro 4,898 个，RetroAchievements 集合 1,876 个）；解压后 ROM 6,734 个，10.90 GiB |
+| 入库后大小 | 完整库 1.78 GiB；公开 Catalog 53.7 MiB（不含 ROM 数据） |
+| 比例 | 完整库为原 ZIP 的 29.3%，为解压后 ROM 总量的 16.4% |
 | 使用的技术 | 存储 v4：64 KiB 块按 SHA256 去重，按 No-Intro 游戏族顺序装入最大 128 MiB 的 LZMA2 实体组（字典 128 MiB）；逐块 SHA256、逐对象 CRC32／MD5／SHA1／SHA256 校验；源 ZIP 由 TorrentZip 配方逐字节重建 |
-| 导出性能 | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz，空闲负载，Python 3.14.4，含全部校验。全集合顺序导出（4,898 个 ROM 文件，每组解压一次）：20.6 MiB/s，平均 71 毫秒／个；单个文件冷缓存（每次清空缓存，需解压所在组的前段）：ROM 平均 1.099 秒，TorrentZip 平均 1.402 秒 |
+| 导出性能 | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz，空闲负载，Python 3.14.4，含全部校验。全集合顺序导出（6,734 个 ROM 文件，每组解压一次）：22.3 MiB/s，平均 74 毫秒／个；单个文件冷缓存（每次清空缓存，需解压所在组的前段）：ROM 平均 1.121 秒，TorrentZip 平均 1.398 秒 |
 
 ## 下载与说明
 
 | 文件／文档 | 内容 |
 | --- | --- |
 | [RetroBoxDB.SNES.Catalog.sqlite](https://github.com/rshi0212/RetroBoxDB-SNES/releases/latest/download/RetroBoxDB.SNES.Catalog.sqlite) | 公开 Catalog（Release 附件，附 `SHA256SUMS`） |
-| [存储 v4 说明](RetroBoxDB.Storage-v4.zh-CN.md)／[English](RetroBoxDB.Storage-v4.en.md) | 六个平台的存储评估、内容、RA、中文名与维护 |
+| [存储 v4 说明](RetroBoxDB.Storage-v4.zh-CN.md)／[English](RetroBoxDB.Storage-v4.en.md) | 七个平台的存储评估、内容、RA、中文名与维护 |
 | [Technical design](RetroBoxDB.Storage-v4.Technical-Design.en.md) | 存储格式、平台适配、增量更新、校验 |
 | [RA 清单](reports/ra-snes-games.csv)／[汇总](reports/ra-snes.json)、[构建报告](reports/snes-build-report.json)、[审计处理](reports/audit-resolution-20261004.md) | 逐项数据 |
 
@@ -34,13 +34,14 @@
 
 | 项目 | 数值 |
 | --- | --- |
-| ROM 记录／游戏组／发行版本 | 4,293／1,996／4,329 |
+| ROM 记录／游戏组／发行版本 | 5,239／1,996／4,329 |
 | 各版 DAT 覆盖 | 20260710-203222：4,255/4,318；20261003-140326：4,261/4,331 |
-| 不在任何 DAT 的本地 ROM | 32 |
+| 不在任何 DAT 的本地 ROM | 978 |
+| RetroAchievements 集合中的 ROM 文件 | DAT 中有 889，仅 RA 收录 932，哈希不在最新 RA 快照 15（[清单](reports/ra-snes-collection-unknown.csv)）；仍缺本地 ROM 的 RA 游戏见 [缺口清单](reports/ra-snes-missing.csv) |
 | No-Intro DB Export＋Dump Log 20261003-140326 | 4,365 个档案、5,457 个文件身份、5,399 条有文档的硬件声明；Dump Log Verified 1,871 |
-| RetroAchievements（console 3） | 有成就的游戏 1,185 个：本地有 ROM 673（914 个 ROM），仅 DAT 有 0，仅 DB 文件 1，无 No-Intro 对应 511 |
+| RetroAchievements（console 3） | 有成就的游戏 1,185 个：本地有 ROM 1,089（1,845 个 ROM），仅 DAT 有 0，仅 DB 文件 0，无 No-Intro 对应 96 |
 | 中文名 | 4,154 条记录中 3,942 条有中文（2,030 个唯一名）；本地 ROM 3,909 个有中文名 |
-| 完整库审计 | 4,297 个对象、37 个组、4,813 个 ZIP 配方，全部通过 |
+| 完整库审计 | 5,283 个对象、57 个组、5,814 个 ZIP 配方，全部通过 |
 
 源 ZIP 均可由 TorrentZip 配方逐字节重建（`v_file_checksums.exported_bytes_equal_source`）。
 

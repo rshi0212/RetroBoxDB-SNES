@@ -1,7 +1,8 @@
 """Export a reproducible game set from a populated RetroBoxDB (any platform, storage v3 or v4). Read-only.
 
 Selection dimensions combine freely:
-  --dat latest|VERSION      DAT snapshot (NES also needs --dat-mode headered|headerless)
+  --dat latest|VERSION      DAT snapshot (latest within the chosen format)
+  --dat-format FMT          DAT format for platforms with several: NES Headered|Headerless, FDS FDS|QD
   --set all|parents|1g1r    every DAT game, parents only, or one game per parent/clone family
   --region-priority LIST    1G1R region order (default USA,World,Europe,Japan)
   --ra any|achievements|none   RetroAchievements filter (needs the database's RA snapshot)
@@ -45,6 +46,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('db'); ap.add_argument('out', type=pathlib.Path)
     ap.add_argument('--dat', default='latest'); ap.add_argument('--dat-mode', choices=['headered', 'headerless', 'unspecified'])
+    ap.add_argument('--dat-format', help='DAT format named in the DAT title, e.g. FDS or QD (Famicom Disk System), Headered or Headerless (NES)')
     ap.add_argument('--set', choices=['all', 'parents', '1g1r'], default='all'); ap.add_argument('--region-priority', default='USA,World,Europe,Japan')
     ap.add_argument('--ra', choices=['any', 'achievements', 'none'], default='any'); ap.add_argument('--ra-category')
     ap.add_argument('--include'); ap.add_argument('--exclude')
@@ -55,9 +57,12 @@ def main():
     eng = load_engine(a.db, a.engine_file); db = eng.DB(a.db); c = db.c
     platform = c.execute('SELECT code FROM platforms WHERE id=1').fetchone()[0]
     sets = c.execute('SELECT id,version,mode,name FROM dat_sets ORDER BY version,id').fetchall()
+    if a.dat_format: sets = [s for s in sets if f'({a.dat_format})'.casefold() in s['name'].casefold()]
+    if a.dat_mode: sets = [s for s in sets if s['mode'] == a.dat_mode]
+    if not sets: raise SystemExit('No DAT set matches --dat-format/--dat-mode')
     version = sets[-1]['version'] if a.dat == 'latest' else a.dat
-    cand = [s for s in sets if s['version'] == version and (a.dat_mode is None or s['mode'] == a.dat_mode)]
-    if len(cand) != 1: raise SystemExit(f'Choose one DAT set: {[(s["version"], s["mode"]) for s in sets if s["version"] == version]} (use --dat-mode)')
+    cand = [s for s in sets if s['version'] == version]
+    if len(cand) != 1: raise SystemExit(f'Choose one DAT set: {[(s["version"], s["name"]) for s in cand]} (use --dat-format, e.g. FDS or QD, or --dat-mode)')
     ds = cand[0]
     games = [dict(g) for g in c.execute('SELECT id,name,cloneof FROM dat_games WHERE dat_set_id=? ORDER BY ordinal', (ds['id'],))]
     by_name = {g['name']: g for g in games}

@@ -43,6 +43,8 @@ PLATFORM_ADAPTERS = {
             'table': 'gb_hardware', 'rom_ext': ('.gbc', '.gb', '.cgb', '.bin', '.rom')},
     'gba': {'name': 'Nintendo Game Boy Advance', 'parser': parse_gba, 'cuts': lambda data: set(),
             'table': 'gba_hardware', 'rom_ext': ('.gba', '.agb', '.gbc', '.gb', '.bin', '.srl', '.mb')},
+    'fds': {'name': 'Nintendo Family Computer Disk System', 'parser': parse_fds, 'cuts': fds_cuts,
+            'table': 'fds_hardware', 'rom_ext': ('.fds', '.qd', '.bin'), 'header_len': lambda d: 16 if d[:4] == b'FDS\x1a' else 0},
 }
 
 
@@ -62,7 +64,11 @@ def torrentzip_hashes(entries):
 
 
 def ra_hash(platform, data):
-    """RetroAchievements content hash (rcheevos rc_hash_snes; plain buffer MD5 for Mega Drive, GB, GBC and GBA)."""
+    """RetroAchievements content hash (rcheevos rc_hash_nes / rc_hash_fds / rc_hash_snes; plain buffer MD5 for Mega Drive, GB, GBC and GBA)."""
+    if platform == 'nes' and data[:4] == b'NES\x1a':
+        return hashlib.md5(data[16:]).hexdigest(), 'md5 after the 16-byte NES header (rcheevos nes)'
+    if platform == 'fds' and data[:4] == b'FDS\x1a':
+        return hashlib.md5(data[16:]).hexdigest(), 'md5 after the 16-byte fwNES header (rcheevos fds)'
     if platform == 'snes' and len(data) % 0x2000 == 512:
         return hashlib.md5(data[512:]).hexdigest(), 'md5 after 512-byte copier header (rcheevos snes)'
     return hashlib.md5(data).hexdigest(), 'md5 of complete file (rcheevos buffer)'
@@ -129,6 +135,7 @@ class DB(_V3DB):
         self._decoded = collections.OrderedDict(); self._cache_bytes = 0; self._band_index = None
         self._groups = collections.OrderedDict(); self._group_cache_bytes = 0
         self._solid = collections.OrderedDict(); self._solid_bytes = 0; self._fresh = set()
+        self._recent = collections.OrderedDict()  # object id -> bytes just imported (archive plans of the same ZIP)
         setting = self.c.execute("SELECT value FROM meta WHERE key='nes_block_size'").fetchone()
         self._rom_block = int(setting[0]) if setting else ROM_BLOCK
         if self._rom_block not in (4096, 8192, 16384, 65536, 262144, 1048576): raise ValueError('Unsupported ROM block size')
@@ -278,13 +285,23 @@ class DB(_V3DB):
             self._add_bands(r['id'], self.chunk(r['id']), r['depth'])
 
     def store_chunk(self, raw, encoded=None):
-        # ROM payload of adapter platforms is packed into solid groups; XOR deltas would only add dependency chains.
-        if not self.adapter: return super().store_chunk(raw, encoded)
-        sha = hashlib.sha256(raw).digest(); old = self.c.execute('SELECT id FROM chunks WHERE sha256=?', (sha,)).fetchone()
+        # In storage v4 every ROM block is later packed into a solid group, so XOR deltas (v3) would only add work and
+        # dependency chains; v2/v3 NES databases keep the v3 behaviour.
+        if not self.adapter and self.storage_version < 4: return super().store_chunk(raw, encoded)
+        sha = hashlib.sha256(raw).digest()
+        old = self.c.execute('SELECT id,codec,group_id,group_offset,size FROM chunks WHERE sha256=?', (sha,)).fetchone()
         if old:
-            # Blocks of a group stored in this session were already round-trip checked by encode_solid; others are re-read.
-            if sha not in self._fresh and self.chunk(old[0]) != raw: raise ValueError('Hash collision or corrupt block')
-            return old[0]
+            # A deduplicated block is compared byte for byte when that is cheap: a loose block, or a grouped block whose
+            # group is already decoded in the cache. Otherwise the SHA-256 identity stands; decoding a whole solid group
+            # for each hit made imports of mostly-known ROMs (re-dumps, other collections) orders of magnitude slower.
+            # Group integrity is checked when groups are encoded (round trip) and by every audit.
+            if sha in self._fresh: return old['id']
+            if old['codec'] == 'group':
+                e = self._solid.get(old['group_id']); off = old['group_offset']
+                if e is not None and len(e['buf']) >= off + old['size'] and bytes(e['buf'][off:off + old['size']]) != raw:
+                    raise ValueError('Hash collision or corrupt block')
+            elif self.chunk(old['id']) != raw: raise ValueError('Hash collision or corrupt block')
+            return old['id']
         codec, data = encoded or plain_encoding(raw)
         cid = self.insert('chunks', sha256=sha, size=len(raw), codec=codec, base_id=None, depth=0, data=data)
         self._remember(cid, raw); return cid
@@ -356,7 +373,14 @@ class DB(_V3DB):
                     plans.append(('new', None, pending, pend_fams)); pending = []; pend_fams = []; size = 0
                 if fam not in pend_fams: pend_fams.append(fam)
                 pending.append(cid); size += sizes[cid]
-        if pending: plans.append(('new', None, pending, pend_fams))
+        if pending:
+            # A partly filled last group goes into the newest existing group when it has room (any family), so small
+            # additions do not leave small groups behind.
+            tail = sum(size_of[c] for c in pending)
+            newest = self.c.execute('SELECT id,size FROM compression_groups WHERE codec=? ORDER BY id DESC LIMIT 1', (SOLID_CODEC,)).fetchone()
+            if newest and not any(k == 'repack' and g == newest['id'] for k, g, _, _ in plans) and newest['size'] + tail <= limit:
+                plans.append(('repack', newest['id'], pending, pend_fams))
+            else: plans.append(('new', None, pending, pend_fams))
         merged = collections.OrderedDict()  # several families may repack into the same group
         for kind, gid, cids, fams in plans:
             key = (kind, gid) if kind == 'repack' else (kind, id(cids))
@@ -368,15 +392,9 @@ class DB(_V3DB):
         self.c.execute('SAVEPOINT compact_solid')
         try:
             for n in triggers: self.c.execute('DROP TRIGGER ' + n)
-            jobs = []; touched = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
-                for kind, gid, cids, fams in merged.values():
-                    base = self.group(gid) if kind == 'repack' else b''
-                    if kind == 'repack' and len(base) + sum(len(self.chunk(c)) for c in cids) > limit:
-                        kind, gid, base = 'new', None, b''
-                    raw = base + b''.join(self.chunk(c) for c in cids)
-                    jobs.append((kind, gid, cids, fams, len(base), pool.submit(encode_solid, raw, self.solid_dict)))
-                for kind, gid, cids, fams, base_len, fut in jobs:
+            touched = []; jobs = collections.deque()
+
+            def finish(kind, gid, cids, fams, base_len, fut):
                     encoded, digest, edigest = fut.result()
                     size = base_len + sum(size_of[c] for c in cids)
                     ng = self.insert('compression_groups', sha256=digest, encoded_sha256=edigest, size=size, codec=SOLID_CODEC, data=encoded)
@@ -396,6 +414,18 @@ class DB(_V3DB):
                         self.c.execute('INSERT INTO solid_group_families VALUES (?,?,?)', (ng, i, fam))
                     result['raw_bytes'] += size
                     if progress: progress(dict(result))
+            # At most `workers` groups are assembled or being encoded at a time: memory stays bounded by
+            # workers x (group + encoder) however much loose data is waiting (a large RA set is several GiB).
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+                for kind, gid, cids, fams in merged.values():
+                    while len(jobs) >= workers: finish(*jobs.popleft())
+                    base = self.group(gid) if kind == 'repack' else b''
+                    if kind == 'repack' and len(base) + sum(size_of[c] for c in cids) > limit:
+                        kind, gid, base = 'new', None, b''
+                    raw = base + b''.join(self.chunk(c) for c in cids); base_len = len(base); base = None
+                    jobs.append((kind, gid, cids, fams, base_len, pool.submit(encode_solid, raw, self.solid_dict))); raw = None
+                    if kind == 'repack': self._solid.pop(gid, None); self._solid_account()
+                while jobs: finish(*jobs.popleft())
             for sql in triggers.values(): self.c.execute(sql[0])
             # Independent verification of every block now served by a solid group touched here.
             self.clear_caches()
@@ -436,7 +466,25 @@ class DB(_V3DB):
         return gid
 
     # ---------------------------------------------------------------- platform ROMs
+    def _keep(self, oid, data):
+        self._recent[oid] = data; self._recent.move_to_end(oid)
+        while len(self._recent) > 64: self._recent.popitem(last=False)
+
+    def put(self, data, header_boundary=False):
+        oid = super().put(data, header_boundary); self._keep(oid, data); return oid
+
+    def plan(self, entries, expected=None):
+        """As v3, but a new plan's TorrentZip identity is computed from the member bytes just imported (already checked
+        against the ZIP CRCs and hashed into their objects) instead of reading them back from solid groups."""
+        if expected is None and entries and all(oid is None or oid in self._recent for _, oid in entries):
+            norm = normalize_archive_entries(entries)
+            expected = hashes(make_torrentzip([(n, b'' if oid is None else self._recent[oid]) for n, oid in norm]))
+        return super().plan(entries, expected)
+
     def rom(self, data, mode='auto'):
+        rid, oid = self._rom(data, mode); self._keep(oid, data); return rid, oid
+
+    def _rom(self, data, mode='auto'):
         if not self.adapter: return super().rom(data, mode)
         if mode == 'auxiliary':
             p = dict(format='auxiliary', parse_status='unclassified', components=[('file', 0, len(data))] if data else [], hardware=None, warnings=[])
@@ -444,8 +492,12 @@ class DB(_V3DB):
         oid = self.put_body(data, self.adapter['cuts'](data))
         old = self.c.execute('SELECT id FROM roms WHERE object_id=? AND platform_id=1', (oid,)).fetchone()
         if old: return old[0], oid
-        rid = self.insert('roms', object_id=oid, platform_id=1, format=p['format'], parse_status=p['parse_status'], header=None,
-                          body_object_id=oid, prg_chr_sha256=None, prg_chr_size=None, parser_version=VERSION + '/' + PARSER_VERSION,
+        # A copier/emulator header that DATs skip (FDS fwNES): the body after it is its own object; its blocks are the
+        # same as the headered file's after the header, so it costs block references only.
+        hl = self.adapter.get('header_len', lambda d: 0)(data)
+        body = self.put_body(data[hl:], self.adapter['cuts'](data[hl:])) if hl else oid
+        rid = self.insert('roms', object_id=oid, platform_id=1, format=p['format'], parse_status=p['parse_status'], header=data[:hl] if hl == 16 else None,
+                          body_object_id=body, prg_chr_sha256=None, prg_chr_size=None, parser_version=VERSION + '/' + PARSER_VERSION,
                           warnings_json=js(p['warnings']))
         for i, (kind, off, size) in enumerate(p['components']):
             self.insert('rom_components', rom_id=rid, ordinal=i, kind=kind, offset=off, size=size, sha256=hashlib.sha256(data[off:off + size]).hexdigest())
@@ -461,7 +513,7 @@ class DB(_V3DB):
         Object checksums were computed from the actual bytes at import and audit re-verifies them, so the
         members are decoded here only when a new archive plan must be encoded (export always re-verifies).
         """
-        if not self.adapter or encoded is not None: return super().package(gid, encoded)
+        if (not self.adapter and self.storage_version < 4) or encoded is not None: return super().package(gid, encoded)
         game = self.c.execute('SELECT * FROM dat_games WHERE id=?', (gid,)).fetchone(); entries = []; members = []
         for t in self.c.execute('SELECT * FROM dat_roms WHERE dat_game_id=? ORDER BY ordinal', (gid,)).fetchall():
             v = self.c.execute("SELECT * FROM validations WHERE dat_rom_id=? AND status='match' ORDER BY CASE strength WHEN 'sha256' THEN 0 WHEN 'sha1' THEN 1 ELSE 2 END,rom_id LIMIT 1", (t['id'],)).fetchone()

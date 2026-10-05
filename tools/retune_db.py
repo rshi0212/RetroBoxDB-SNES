@@ -3,7 +3,7 @@
 python3 -B tools/retune_db.py FULL.sqlite --group-mib N [--workers N] [--dry-run]
 
 Consecutive solid groups (already in No-Intro family order) are merged up to the new cap and re-encoded with a
-dictionary equal to the cap. Block IDs, block SHA256 values and object extents never change: only the group a block
+dictionary equal to the cap. With the current cap, only adjacent groups that fit together are merged (consolidation). Block IDs, block SHA256 values and object extents never change: only the group a block
 lives in and its offset are rewritten. Every new group is round-trip checked before insertion, the whole operation is
 one transaction, and every block of every new group is re-verified before commit. If the existing table definition
 caps group size below the new value, that CHECK constraint is relaxed (never tightened) through writable_schema and the
@@ -44,7 +44,7 @@ def retune(db_path, group_mib, workers=None, dry_run=False, eng=None):
     if cap > eng.SOLID_MAX: raise SystemExit(f'Group cap above the engine ceiling ({eng.SOLID_MAX >> 20} MiB)')
     c0 = sqlite3.connect(a.db, isolation_level=None)
     old_cap = int(c0.execute("SELECT value FROM meta WHERE key='solid_group_max_bytes'").fetchone()[0])
-    if cap <= old_cap: raise SystemExit('Retune only merges groups: the new cap must exceed the current one')
+    if cap < old_cap: raise SystemExit('Retune only merges groups: the new cap must not be below the current one')
     if not a.dry_run:
         relaxed = relax_group_cap(c0, cap)
         log('schema cap relaxed' if relaxed else 'schema cap already sufficient')
@@ -57,6 +57,9 @@ def retune(db_path, group_mib, workers=None, dry_run=False, eng=None):
         if cur and size + g['size'] > cap: plan.append(cur); cur = []; size = 0
         cur.append(g); size += g['size']
     if cur: plan.append(cur)
+    # Same cap: consolidate only (adjacent groups that fit together are merged; groups left alone are not re-encoded).
+    if cap == old_cap: plan = [m for m in plan if len(m) > 1]
+    if not plan: log('nothing to merge'); return {'groups_before': len(groups), 'groups_after': len(groups)}
     before = db.c.execute("SELECT count(*),sum(length(data)) FROM compression_groups WHERE codec='lzma2-solid'").fetchone()
     log(f'{len(groups)} groups -> {len(plan)} groups of <= {a.group_mib} MiB')
     if a.dry_run: return {'groups_before': len(groups), 'groups_after': len(plan)}

@@ -41,7 +41,60 @@ PLATFORMS = {
     'gba': dict(label='GBA', name='Nintendo Game Boy Advance', nointro='Nintendo - Game Boy Advance', batocera='gba',
                 names=ROOT / 'data' / 'Nintendo - Game Boy Advance.csv',
                 block=1048576, solid=256 * MIB, dictionary=256 * MIB, workers=2),
+    # Two No-Intro formats of the same disks: FDS (primary: games and releases) and QD (entries join the FDS release of
+    # the same name). The whole platform fits in one 128 MiB group (assessment/data/storage-experiment-fds.json).
+    'fds': dict(label='FDS', name='Nintendo Family Computer Disk System', nointro='Nintendo - Family Computer Disk System', batocera='fds',
+                names=ROOT / 'data' / 'Nintendo - Family Computer Disk System.csv',
+                block=65536, solid=128 * MIB, dictionary=128 * MIB, workers=1,
+                dat_globs=('Nintendo - Family Computer Disk System (FDS) (Parent-Clone) (*).zip',
+                           'Nintendo - Family Computer Disk System (QD) (Parent-Clone) (*).zip'),
+                dumplog_glob='Nintendo - Family Computer Disk System (FDS) (Dump Log) (*).zip'),
 }
+
+
+def dat_globs(cfg):
+    """Parent-Clone DAT patterns, primary format first (NES: Headered, Headerless; FDS: FDS, QD)."""
+    return cfg.get('dat_globs', (cfg['nointro'] + ' (Parent-Clone) (*).zip',))
+
+
+def dat_format(cfg, set_name):
+    """Index of the DAT format (position in dat_globs) for a dat_sets.name such as '... (QD) (Parent-Clone)'."""
+    for i, g in enumerate(dat_globs(cfg)):
+        if g.split(' (*)')[0] == set_name: return i
+    return 0
+
+
+def link_format(db, new_ds, old_sets, primary_ds):
+    """Releases for a secondary DAT format: an entry joins the primary-format release of the same name; otherwise a new
+    release under the game of its parent (by name in the primary format), otherwise a new game. Older DATs of the same
+    format join through their diff against new_ds."""
+    c = db.c; ver = c.execute('SELECT version FROM dat_sets WHERE id=?', (new_ds,)).fetchone()[0]
+    prim = {r['name']: (r['release_id'], r['game_id']) for r in c.execute('''SELECT dg.name,rdg.release_id,rel.game_id FROM dat_games dg
+             JOIN release_dat_games rdg ON rdg.dat_game_id=dg.id JOIN releases rel ON rel.id=rdg.release_id WHERE dg.dat_set_id=?''', (primary_ds,))}
+    games = [dict(r) for r in c.execute('SELECT * FROM dat_games WHERE dat_set_id=? ORDER BY ordinal', (new_ds,))]
+    by_name = {g['name']: g for g in games}; release_of = {}; stats = collections.Counter(); new_games = {}
+    for g in games:
+        if g['name'] in prim:
+            release_of[g['id']] = prim[g['name']][0]; stats['joined_same_name'] += 1
+        else:
+            root = g; seen = set()
+            while root['cloneof'] in by_name and root['cloneof'] not in seen: seen.add(root['name']); root = by_name[root['cloneof']]
+            gid = prim[root['name']][1] if root['name'] in prim else new_games.get(root['name'])
+            if gid is None:
+                gid = new_games[root['name']] = db.insert('games', platform_id=1, title=root['name'], metadata_json=js({'catalog_source': 'No-Intro parent/clone, not independent scraped identification', 'dat_game_id': root['id']}))
+                stats['games_added'] += 1
+            rel = [{'name': e.get('name'), 'region': e.get('region')} for e in ET.fromstring(g['raw_xml']).findall('release')]
+            release_of[g['id']] = db.insert('releases', game_id=gid, title=g['name'], metadata_json=js({'dat_game_id': g['id'], 'source': f'No-Intro DAT {ver}; release fields unguessed', 'dat_release_elements': rel}))
+            stats['releases_added'] += 1
+        c.execute('INSERT OR IGNORE INTO release_dat_games VALUES (?,?)', (release_of[g['id']], g['id']))
+    for ds in old_sets:
+        for r in c.execute('''SELECT DISTINCT og.id AS old_game,ng.id AS new_game FROM dat_changes ch JOIN dat_roms o ON o.id=ch.old_dat_rom_id
+            JOIN dat_games og ON og.id=o.dat_game_id JOIN dat_roms n ON n.id=ch.new_dat_rom_id JOIN dat_games ng ON ng.id=n.dat_game_id
+            WHERE og.dat_set_id=? AND ng.dat_set_id=? AND ch.classification!='removed' ''', (ds, new_ds)).fetchall():
+            c.execute('INSERT OR IGNORE INTO release_dat_games VALUES (?,?)', (release_of[r['new_game']], r['old_game'])); stats['old_dat_games_linked'] += 1
+    c.execute("""INSERT OR IGNORE INTO rom_releases(rom_id,release_id,source_id,notes) SELECT DISTINCT v.rom_id,rdg.release_id,NULL,'Verified matching bytes to linked DAT entry; no inferred PCB identity'
+        FROM validations v JOIN dat_roms dr ON dr.id=v.dat_rom_id JOIN release_dat_games rdg ON rdg.dat_game_id=dr.dat_game_id WHERE v.status='match'""")
+    return dict(stats)
 SOURCE_DOCS = [
     ('No-Intro DAT-o-MATIC', 'https://datomatic.no-intro.org/', 'Parent-Clone DATs, DB Export and Dump Log snapshots as supplied locally; each snapshot is retained.'),
     ('SNES ROM header', 'https://snes.nesdev.org/wiki/ROM_header', 'Internal header declarations parsed descriptively.'),
@@ -101,6 +154,7 @@ def schema_v4(platform):
          f" size INTEGER NOT NULL CHECK(size>0 AND size<={PLATFORMS[platform]['solid']} AND (codec='lzma2-solid' OR size<=2097152)),\n codec TEXT NOT NULL CHECK(codec IN ('lzma2-4m','lzma2-solid')),"),
         (" sha1 TEXT NOT NULL CHECK(length(sha1)=40),sha256 TEXT NOT NULL CHECK(length(sha256)=64),\n bad INTEGER",
          " sha1 TEXT NOT NULL CHECK(length(sha1)=40),sha256 TEXT CHECK(sha256 IS NULL OR length(sha256)=64),\n bad INTEGER"),
+        ("hash_scope TEXT NOT NULL CHECK(hash_scope IN ('full','nes_after_header'))", "hash_scope TEXT NOT NULL CHECK(hash_scope IN ('full','nes_after_header','fds_after_header'))"),
         ("INSERT INTO frontend_platforms VALUES ('batocera','nes','nes','screenscraper',NULL);",
          f"INSERT INTO frontend_platforms VALUES ('batocera','{platform}','{PLATFORMS[platform]['batocera']}','screenscraper',NULL);"),
     ]
@@ -353,23 +407,28 @@ def main():
     db = eng.DB(args.out)
     report = {'platform': plat, 'started_at': datetime_now(), 'engine_version': eng.VERSION}
 
-    dats = latest(DATFILES.glob(cfg['nointro'] + ' (Parent-Clone) (*).zip'))
+    groups = [latest(DATFILES.glob(g)) for g in dat_globs(cfg)]  # per format, oldest first; primary format first
+    dats = [p for g in groups for p in g]
     dbx = latest(DATFILES.glob(cfg['nointro'] + ' (DB Export) (*).zip'))
-    dlog = latest(DATFILES.glob(cfg['nointro'] + ' (Dump Log) (*).zip'))
+    dlog = latest(DATFILES.glob(cfg.get('dumplog_glob', cfg['nointro'] + ' (Dump Log) (*).zip')))
     log('DATs', [p.name for p in dats], 'DB', [p.name for p in dbx], 'Dumplog', [p.name for p in dlog])
     with db.c:
-        dat_sets = [db.import_dat_path(p)[0] for p in dats]
+        set_groups = [[db.import_dat_path(p)[0] for p in g] for g in groups]
+    dat_sets = [ds for g in set_groups for ds in g]
     report['dat_sets'] = [dict(r) for r in db.c.execute('SELECT id,name,version FROM dat_sets ORDER BY id')]
 
-    index = family_index(eng, plat, dats, dbx[-1] if dbx else None)
+    # family_index gives priority to the last path (newest primary DAT, then the DB Export).
+    index = family_index(eng, plat, [p for g in reversed(groups) for p in g], dbx[-1] if dbx else None)
     checkpoint(work, report, 'dat_import')
     report['rom_import'] = import_roms(db, eng, plat, index, args.workers, args.limit_families)
     checkpoint(work, report, 'rom_import')
 
     with db.c:
         report['scan'] = {ds: db.scan(ds) for ds in dat_sets}
-        report['dat_diff'] = {f'{a}->{dat_sets[-1]}': eng.dat_diff(db, a, dat_sets[-1]) for a in dat_sets[:-1]}
-        report['catalog'] = build_catalog_records(db, dat_sets[-1], dat_sets[:-1])
+        report['dat_diff'] = {f'{a}->{g[-1]}': eng.dat_diff(db, a, g[-1]) for g in set_groups for a in g[:-1]}
+        primary = set_groups[0]
+        report['catalog'] = build_catalog_records(db, primary[-1], primary[:-1])
+        for g in set_groups[1:]: report['catalog'][f'format {g[-1]}'] = link_format(db, g[-1], g[:-1], primary[-1])
     log('scan/diff/catalog', json.dumps({k: report[k] for k in ('scan', 'dat_diff', 'catalog')}))
     checkpoint(work, report, 'scan_diff_catalog')
 

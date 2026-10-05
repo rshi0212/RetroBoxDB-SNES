@@ -115,9 +115,11 @@ CREATE VIEW v_nointro_ra_matches AS
 -- Family assignment of each stored ROM object: drives solid-group placement for later imports and compaction.
 CREATE TABLE object_families(
  object_id INTEGER PRIMARY KEY REFERENCES objects(id),family_key TEXT NOT NULL,
- basis TEXT NOT NULL CHECK(basis IN ('newest_dat','dat','nointro_db','title','solid_group'))
+ basis TEXT NOT NULL CHECK(basis IN ('newest_dat','dat','nointro_db','title','solid_group','shared_blocks'))
 ) STRICT;
 CREATE INDEX object_family_key ON object_families(family_key);
+-- Which objects use a block (shared-block family assignment, deduplication reports).
+CREATE INDEX object_chunk_block ON object_chunks(chunk_id);
 CREATE INDEX solid_group_family_key ON solid_group_families(family_key);
 
 -- Game Boy / Game Boy Color cartridge header (0x100-0x14F) and Game Boy Advance header (0x00-0xBF).
@@ -155,16 +157,60 @@ CREATE VIEW v_gba_headers AS
  SELECT r.id AS rom_id,o.sha1,o.size,r.parse_status,h.title,h.game_code,h.maker_code,h.version,h.complement_valid,h.save_types,
  h.padding_byte,h.padding_bytes,o.size-h.padding_bytes AS content_bytes,h.logo_sha1=(SELECT logo_sha1 FROM common) AS logo_is_common
  FROM roms r JOIN objects o ON o.id=r.object_id JOIN gba_hardware h ON h.rom_id=r.id;
+-- Famicom Disk System disk images (FDS: sides of 65500 bytes; QD: sides of 65536 bytes with block CRCs; optional
+-- 16-byte fwNES header). Values are the disk information block declarations; sides_json has one entry per side.
+CREATE TABLE fds_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ image_format TEXT NOT NULL CHECK(image_format IN ('fds','qd','unknown')),fwnes_header INTEGER NOT NULL,fwnes_sides INTEGER,
+ side_size INTEGER NOT NULL,sides INTEGER NOT NULL,valid_sides INTEGER NOT NULL,manufacturer_code INTEGER,game_code TEXT,game_type TEXT,
+ revision INTEGER,disk_type INTEGER,manufacturing_date TEXT,manufacturing_date_bcd TEXT,country_code INTEGER,trailing_bytes INTEGER NOT NULL,
+ sides_json TEXT NOT NULL CHECK(json_valid(sides_json)),raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+CREATE TRIGGER immutable_fds_hardware_update BEFORE UPDATE ON fds_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_fds_hardware_delete BEFORE DELETE ON fds_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE VIEW v_fds_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.image_format,h.fwnes_header,h.sides,h.valid_sides,h.manufacturer_code,
+ h.game_code,h.game_type,h.revision,h.disk_type,h.manufacturing_date,h.country_code,h.trailing_bytes
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN fds_hardware h ON h.rom_id=r.id;
 -- DAT diff joins (old/new entry -> release linkage) need both directions indexed.
 CREATE INDEX dat_change_old ON dat_changes(old_dat_rom_id);
 CREATE INDEX dat_change_new ON dat_changes(new_dat_rom_id);
 
 -- Every information source in this database, grouped as existing (DAT/ROM bytes), extended (No-Intro DB,
 -- RetroAchievements, names) and future/placeholder (frontend media and scraping). New snapshots appear as new rows.
+-- Source collections: every local folder ROM ZIPs were imported from (No-Intro sets, RetroAchievements sets, others).
+-- Files belong to a collection by path; members of a ZIP carry the ZIP's source_path.
+CREATE TABLE source_collections(
+ id INTEGER PRIMARY KEY,
+ kind TEXT NOT NULL CHECK(kind IN ('nointro','retroachievements','other')),
+ name TEXT NOT NULL,
+ root_path TEXT NOT NULL UNIQUE,
+ registered_at TEXT NOT NULL
+) STRICT;
+CREATE VIEW v_collection_files AS
+ SELECT sc.id AS collection_id,sc.kind,sc.name AS collection,f.id AS file_id,f.kind AS file_kind,f.parent_file_id,
+  f.original_name,f.source_path,f.object_id
+ FROM source_collections sc JOIN files f ON f.source_path LIKE replace(replace(sc.root_path,'%','\%'),'_','\_') || '/%' ESCAPE '\';
+-- One row per ROM file of a RetroAchievements collection: RA game (latest snapshot), No-Intro validation and release.
+CREATE VIEW v_ra_collection AS
+ SELECT cf.collection,cf.file_id,cf.original_name,
+  (SELECT p.original_name FROM files p WHERE p.id=cf.parent_file_id) AS zip_name,
+  r.id AS rom_id,h.ra_md5,g.ra_game_id,g.title AS ra_title,g.category AS ra_category,g.num_achievements,
+  (SELECT group_concat(DISTINCT dg.name) FROM validations v JOIN dat_roms dr ON dr.id=v.dat_rom_id JOIN dat_games dg ON dg.id=dr.dat_game_id
+    WHERE v.rom_id=r.id AND v.status='match') AS nointro_dat_games,
+  (SELECT min(rr.release_id) FROM rom_releases rr WHERE rr.rom_id=r.id) AS release_id,
+  CASE WHEN g.ra_game_id IS NULL THEN 'ra_hash_unknown' WHEN EXISTS(SELECT 1 FROM validations v WHERE v.rom_id=r.id AND v.status='match')
+   THEN 'in_nointro_dat' ELSE 'ra_only' END AS status
+ FROM v_collection_files cf JOIN roms r ON r.object_id=cf.object_id
+ LEFT JOIN rom_ra_hashes h ON h.rom_id=r.id
+ LEFT JOIN ra_games g ON g.ra_game_id=(SELECT rh.ra_game_id FROM ra_hashes rh WHERE rh.md5=h.ra_md5 AND rh.snapshot_id=(SELECT max(id) FROM ra_snapshots) LIMIT 1)
+  AND g.snapshot_id=(SELECT max(id) FROM ra_snapshots)
+ WHERE cf.kind='retroachievements' AND cf.file_kind='rom';
 CREATE VIEW v_information_sources AS
  SELECT 'existing' AS layer,'No-Intro DAT' AS source,ds.version AS version,ds.imported_at AS imported_at,
   (SELECT count(*) FROM dat_games g WHERE g.dat_set_id=ds.id) AS entries,ds.name AS detail FROM dat_sets ds
  UNION ALL SELECT 'existing','ROM files',NULL,min(imported_at),count(*),'local files (all kinds)' FROM files
+ UNION ALL SELECT 'existing','Source collection: '||sc.kind,NULL,sc.registered_at,(SELECT count(*) FROM v_collection_files cf WHERE cf.collection_id=sc.id AND cf.parent_file_id IS NULL),sc.name FROM source_collections sc
  UNION ALL SELECT 'extended','No-Intro DB Export + Dump Log',s.version,s.imported_at,(SELECT count(*) FROM ni_archives a WHERE a.snapshot_id=s.id),'snapshot '||s.id FROM ni_snapshots s
  UNION ALL SELECT 'extended','RetroAchievements',r.fetched_at,r.fetched_at,r.games,'console '||r.console_id||', '||r.hashes||' hashes' FROM ra_snapshots r
  UNION ALL SELECT 'extended','English/Chinese names',i.source_sha256,i.imported_at,(SELECT count(*) FROM game_name_entries e WHERE e.import_id=i.id),i.source_name FROM game_name_imports i

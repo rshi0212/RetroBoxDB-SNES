@@ -1,40 +1,60 @@
 {
-  "snapshot_id": 1,
+  "snapshot_id": 2,
   "console_id": 3,
-  "fetched_at": "2026-10-04T08:19:51.117278+00:00",
+  "fetched_at": "2026-10-05T06:03:56.419326+00:00",
   "ra_games_with_achievements": 1185,
   "status_totals": {
-    "local": 673,
+    "local": 1089,
     "dat_only": 0,
-    "nointro_db_only": 1,
-    "unmatched": 511
+    "nointro_db_only": 0,
+    "unmatched": 96
   },
   "by_category": {
     "Official": {
-      "local": 648,
-      "unmatched": 64
+      "local": 680,
+      "unmatched": 32
     },
     "Prototype": {
       "local": 11
     },
     "Hack": {
-      "unmatched": 440
+      "local": 380,
+      "unmatched": 60
     },
     "Homebrew": {
-      "local": 10,
-      "unmatched": 3
+      "local": 11,
+      "unmatched": 2
     },
     "Unlicensed": {
-      "local": 3,
-      "nointro_db_only": 1
+      "local": 4
     },
     "Test Kit": {
       "local": 1
     },
     "Hack/Demo": {
-      "unmatched": 4
+      "local": 2,
+      "unmatched": 2
     }
   },
-  "local_roms_with_achievements": 914,
-  "rule": "RA hash = MD5 of the file after a 512-byte copier header when size % 8192 == 512, otherwise of the whole file; exact hash equality only"
+  "local_roms_with_achievements": 1845,
+  "rule": "RA hash = MD5 of the file after a 512-byte copier header when size % 8192 == 512, otherwise of the whole file; exact hash equality only",
+  "local_games_by_source": {
+    "nointro": 19,
+    "nointro,retroachievements": 654,
+    "retroachievements": 416
+  },
+  "retroachievements_collections": {
+    "RA - Super Nintendo Entertainment System": {
+      "in_nointro_dat": 889,
+      "ra_hash_unknown": 15,
+      "ra_only": 932
+    }
+  },
+  "collection_files_with_unknown_ra_hash": 15,
+  "missing_by_category": {
+    "Official": 32,
+    "Hack": 60,
+    "Homebrew": 2,
+    "Hack/Demo": 2
+  }
 }

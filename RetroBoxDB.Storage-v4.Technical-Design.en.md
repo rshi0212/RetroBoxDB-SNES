@@ -2,7 +2,7 @@
 
 [English guide](RetroBoxDB.Storage-v4.en.md) · [中文说明](RetroBoxDB.Storage-v4.zh-CN.md) · [NES v3 design (history)](https://github.com/rshi0212/RetroBoxDB-NES/blob/main/RetroBoxDB.NES.Technical-Design.en.md)
 
-Six platforms (NES, SNES, Mega Drive, Game Boy, Game Boy Color, Game Boy Advance) each have one populated SQLite file and one payload-free Catalog. The application schema is the NES v3 schema (objects, files, ROMs, DAT sets, validations, archive plans, No-Intro DB/Dump Log, frontend placeholders, names) plus `tools/schema_v4.sql`. Tables of other platforms exist and stay empty so shared views and the single engine work everywhere. `platforms.id=1` holds the platform code.
+Seven platforms (NES, SNES, Mega Drive, Game Boy, Game Boy Color, Game Boy Advance, Famicom Disk System) each have one populated SQLite file and one payload-free Catalog. The application schema is the NES v3 schema (objects, files, ROMs, DAT sets, validations, archive plans, No-Intro DB/Dump Log, frontend placeholders, names) plus `tools/schema_v4.sql`. Tables of other platforms exist and stay empty so shared views and the single engine work everywhere. `platforms.id=1` holds the platform code.
 
 ## Storage evaluation
 
@@ -16,6 +16,7 @@ Sample results (MiB, block metadata estimate included; group sizes were then set
 | Game Boy | 48.9 | 31.6 | 64 KiB / 32 MiB | 26.1 |
 | Game Boy Color | 206.5 | 126.7 | 64 KiB / 32 MiB | 104.2 |
 | Game Boy Advance | 602.8 | — | 1 MiB / 128 MiB | 228.0 |
+| Famicom Disk System (whole set) | 33.7 | — | 64 KiB / 128 MiB | 10.1 |
 
 Change of compressed size on real data against the base group; the last column is the measured result after applying the chosen cap to the whole database:
 
@@ -27,10 +28,11 @@ Change of compressed size on real data against the base group; the last column i
 | Game Boy | all 18 groups, 551 MiB | −1.31% | −2.36% | −3.73% | — | 256 MiB | 18 → 3, −3.73% |
 | Game Boy Color | first 16 family-ordered groups, 487 MiB | −1.04% | −1.56% | −2.65% | — | 256 MiB | 77 → 10, −2.88% |
 | Game Boy Advance | first 8 family-ordered groups, 956 MiB; 512 MiB exceeds the 256 MiB engineering ceiling | — | base | −2.08% | −3.29% | 256 MiB | 210 → 104, −1.90% |
+| Famicom Disk System | whole collection with 64 KiB blocks, 77 MiB (one group from 128 MiB) | −1.15% | −4.75% | −4.75% | — | 128 MiB | — |
 
-Base group: 32 MiB for NES, SNES, MD, GB and GBC; 128 MiB for GBA.
+Base group: 32 MiB for NES, SNES, MD, GB, GBC and FDS; 128 MiB for GBA. FDS was built directly with 128 MiB (one group for the platform), so it has no retune result.
 
-Rule: the smallest group cap whose compressed size is within 0.5% of the 256 MiB result. The 256 MiB ceiling bounds encoder memory (about 12 × dictionary per process) and read amplification (a read decodes the group up to the bytes it needs). NES: migrated to v4 with 8 KiB blocks (cut at header/trainer/PRG/CHR boundaries) and 256 MiB groups. On the full database the v3 payload (489 lzma2-4m groups plus XOR-delta loose blocks, 382,082,581 bytes) became 344,223,238 bytes (−9.91%); the real-data curve was 64 MiB −1.40%, 128 MiB −2.59%, 256 MiB −5.66% against 32 MiB groups, smaller caps stay more than 0.5% above the 256 MiB result, so 256 MiB is used.
+Rule: the smallest group cap whose compressed size is within 0.5% of the 256 MiB result. FDS: 64 KiB blocks (one block per side) in a single 128 MiB group: 10.055 MiB in total against 33.72 MiB of ZIPs and 28.21 MiB with per-file LZMA. With one group the compressed size is about 9.9 MiB for every block size; smaller blocks only add metadata. 64 MiB groups split the platform into two groups (+3.8%). Side-aligned cuts do not change the compressed size but let headered and headerless copies of a side deduplicate. The 256 MiB ceiling bounds encoder memory (about 12 × dictionary per process) and read amplification (a read decodes the group up to the bytes it needs). NES: migrated to v4 with 8 KiB blocks (cut at header/trainer/PRG/CHR boundaries) and 256 MiB groups. On the full database the v3 payload (489 lzma2-4m groups plus XOR-delta loose blocks, 382,082,581 bytes) became 344,223,238 bytes (−9.91%); the real-data curve was 64 MiB −1.40%, 128 MiB −2.59%, 256 MiB −5.66% against 32 MiB groups, smaller caps stay more than 0.5% above the 256 MiB result, so 256 MiB is used.
 
 BCJ (GBA only): ARM-Thumb +2.35%, ARM +0.73% on six real 128 MiB groups; not used. lc/lp/pb variations: < 0.2%.
 
@@ -46,24 +48,29 @@ BCJ (GBA only): ARM-Thumb +2.35%, ARM +0.73% on six real 128 MiB groups; not use
 
 | Platform | Block | Group cap / dictionary | Groups | Unique block bytes → stored |
 | --- | ---: | ---: | ---: | --- |
-| NES | 8 KiB | 256 MiB | 6 | 1.28 GiB → 328.3 MiB |
-| SNES | 64 KiB | 128 MiB | 37 | 4.25 GiB → 1.48 GiB |
-| Mega Drive | 64 KiB | 256 MiB | 17 | 3.87 GiB → 882.3 MiB |
-| Game Boy | 64 KiB | 256 MiB | 3 | 558.1 MiB → 128.3 MiB |
-| Game Boy Color | 64 KiB | 256 MiB | 10 | 2.26 GiB → 453.3 MiB |
-| Game Boy Advance | 1 MiB | 256 MiB | 104 | 23.72 GiB → 5.45 GiB |
+| NES | 8 KiB | 256 MiB | 9 | 1.35 GiB → 344.7 MiB |
+| SNES | 64 KiB | 128 MiB | 57 | 5.43 GiB → 1.71 GiB |
+| Mega Drive | 64 KiB | 256 MiB | 20 | 4.07 GiB → 940.5 MiB |
+| Game Boy | 64 KiB | 256 MiB | 5 | 631.2 MiB → 139.5 MiB |
+| Game Boy Color | 64 KiB | 256 MiB | 13 | 2.40 GiB → 469.2 MiB |
+| Game Boy Advance | 1 MiB | 256 MiB | 123 | 27.43 GiB → 6.95 GiB |
+| Famicom Disk System | 64 KiB | 128 MiB | 1 | 78.8 MiB → 10.2 MiB |
 
 - NES: imported by the NES path (16-byte header recipe, body shared by headered and headerless dumps, 8 KiB blocks cut at header/trainer/PRG/CHR boundaries, XOR deltas for loose blocks), then packed into solid groups by `compact_solid`, which treats the body object behind a header recipe as the payload. DB Export imports use the NES importer (header reconstruction, pair checks).
 - SNES: header scored at four locations; a 512-byte copier header is cut into its own block so the body deduplicates with headerless dumps.
 - Mega Drive: SMD-interleaved files are detected and stored unchanged.
 - GB/GBC: logo stored as SHA1 only; frontend sidecar text files are stored as `metadata` files.
 - GBA: 1 MiB blocks; trailing 0xFF/0x00 padding recorded (padding blocks deduplicate); save-library IDs located with `bytes.find`.
+- FDS: images are FDS (65,500-byte sides), QD (65,536-byte sides with a CRC after each block) or BIOS (8 KiB), optionally behind a 16-byte fwNES header. Blocks (64 KiB, one per side) restart at the header and at every side, so a side shared by headered and headerless copies or by revisions is stored once. `fds_hardware.sides_json` keeps the disk information block of every side. Two DAT formats: FDS (primary) and QD (entries join the FDS release of the same name).
 - Loose blocks of adapter platforms skip XOR deltas; every platform's loose blocks are later packed by family.
 
 ## Incremental operation
 
 - `update_db.py` reads only a ZIP's central directory to decide whether a stored archive changed (path, size, member names and CRC32). New ROMs are written as ordinary blocks with their family; `compact_solid` repacks a family's newest group when it has room, otherwise creates new groups; one savepoint, only the chunk-update and group-delete guards are lifted temporarily, every block of every touched group is re-verified.
-- New DATs are diffed against the previous newest; linked entries join existing releases, added entries join the parent's game or create one. DB Export/Dump Log pairs are matched by their timestamp. RA and name imports add snapshots.
+- New DATs are diffed against the previous newest of the same format (`build_db.dat_format`: NES Headered/Headerless, FDS FDS/QD); in the primary format linked entries join existing releases and added entries join the parent's game or create one; other formats join releases by name (`build_db.link_format`). DB Export/Dump Log pairs are matched by their timestamp. RA and name imports add snapshots.
+- Source collections: `update_db.register_collections` records every folder ROM ZIPs come from (`source_collections`: nointro, retroachievements, other); `v_collection_files` maps files to collections by path and `v_ra_collection` joins RA-set files to RA games, DAT validations and releases. `--discover` includes the platform's RA folder; files of another platform found there (`OTHER_PLATFORM_EXT`, e.g. FDS images in the RA NES folder) are skipped and listed in the update report.
+- Families for ROMs outside every DAT: `update_db.shared_block_family` picks the family of the stored objects sharing the most blocks (blocks referenced by more than 32 objects, such as padding, are ignored; at least 10% of the object's blocks must be shared), else a title family. The index `object_chunk_block` on `object_chunks(chunk_id)` serves this lookup.
+- Deduplication check: a new block whose SHA-256 is stored is compared byte for byte when the stored block is loose or its group is already decoded in the cache; otherwise the SHA-256 identity is accepted, because decoding a solid group per hit made imports of mostly known ROMs very slow; groups are verified by the round-trip decode at encoding time and by every audit. New TorrentZip plans are computed from the member bytes just imported (`DB.plan` with the recent-object cache), and DAT packages compare immutable object checksums for every v4 database including NES.
 - `retune_db.py` merges consecutive groups to a larger cap (relaxing, never tightening, the table's cap through `writable_schema`, followed by an integrity check). `migrate_v4.py` copies a v3 database, upgrades its schema, assigns families and RA hashes, decodes payload blocks in block-ID order and packs them in family order. Both keep block IDs, SHA256, sizes, object extents and all metadata.
 
 ## Verification
@@ -80,4 +87,4 @@ BCJ (GBA only): ARM-Thumb +2.35%, ARM +0.73% on six real 128 MiB groups; not use
 
 Naming decisions are written only when the validated object is the file itself; DAT `size` values are range-checked; raw `.dat/.xml` inputs obey `MAX_ROM`; `safe_name` rejects Unicode control and format characters; export checks the parent directory first; ZIP member CRC mismatches are rejected. Details: `reports/audit-resolution-20261004.md`.
 
-Populated-database audits: NES 17,734 objects / 6 groups / 24,487 archive plans; SNES 4,297 objects / 37 groups / 4,813 archive plans; Mega Drive 3,691 objects / 17 groups / 5,044 archive plans; Game Boy 2,323 objects / 3 groups / 2,491 archive plans; Game Boy Color 2,612 objects / 10 groups / 2,679 archive plans; Game Boy Advance 3,740 objects / 104 groups / 3,940 archive plans; all passed.
+Populated-database audits: NES 19,069 objects / 9 groups / 25,368 archive plans; SNES 5,283 objects / 57 groups / 5,814 archive plans; Mega Drive 3,963 objects / 20 groups / 5,367 archive plans; Game Boy 2,546 objects / 5 groups / 2,776 archive plans; Game Boy Color 2,791 objects / 13 groups / 2,931 archive plans; Game Boy Advance 4,149 objects / 123 groups / 4,396 archive plans; Famicom Disk System 712 objects / 1 groups / 728 archive plans; all passed.

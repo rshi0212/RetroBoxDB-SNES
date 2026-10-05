@@ -6,18 +6,18 @@ Single-file SQLite preservation database for Super Nintendo Entertainment System
 
 | Item | Value |
 | --- | --- |
-| Original size | 4,898 No-Intro ZIPs, 3.99 GiB; 4,898 ROM files, 6.97 GiB uncompressed |
-| Stored size | populated database 1.54 GiB; public Catalog 48.5 MiB (no ROM data) |
-| Ratio | 38.5% of the source ZIPs, 22.0% of the uncompressed ROM files |
+| Original size | 6,774 source ZIPs, 6.09 GiB (No-Intro 4,898, RetroAchievements sets 1,876); 6,734 ROM files, 10.90 GiB uncompressed |
+| Stored size | populated database 1.78 GiB; public Catalog 53.7 MiB (no ROM data) |
+| Ratio | 29.3% of the source ZIPs, 16.4% of the uncompressed ROM files |
 | Technology | storage v4: SHA256-deduplicated 64 KiB blocks packed in No-Intro family order into solid LZMA2 groups of up to 128 MiB (128 MiB dictionary); per-block SHA256 and per-object CRC32/MD5/SHA1/SHA256 verification; source ZIPs reproduced byte-for-byte from TorrentZip plans |
-| Export performance | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, idle, Python 3.14.4, all checks included. Whole-set export (4,898 ROM files in storage order, each group decoded once): 20.6 MiB/s, 71 ms per file on average; single file with a cold cache (the group is decoded up to the file): ROM 1.099 s, TorrentZip 1.402 s on average |
+| Export performance | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, idle, Python 3.14.4, all checks included. Whole-set export (6,734 ROM files in storage order, each group decoded once): 22.3 MiB/s, 74 ms per file on average; single file with a cold cache (the group is decoded up to the file): ROM 1.121 s, TorrentZip 1.398 s on average |
 
 ## Downloads and documents
 
 | File / document | Content |
 | --- | --- |
 | [RetroBoxDB.SNES.Catalog.sqlite](https://github.com/rshi0212/RetroBoxDB-SNES/releases/latest/download/RetroBoxDB.SNES.Catalog.sqlite) | Public Catalog (Release asset with `SHA256SUMS`) |
-| [Storage v4 guide](RetroBoxDB.Storage-v4.en.md) / [中文](RetroBoxDB.Storage-v4.zh-CN.md) | Storage evaluation, contents, RA, names and maintenance for all six platforms |
+| [Storage v4 guide](RetroBoxDB.Storage-v4.en.md) / [中文](RetroBoxDB.Storage-v4.zh-CN.md) | Storage evaluation, contents, RA, names and maintenance for all seven platforms |
 | [Technical design](RetroBoxDB.Storage-v4.Technical-Design.en.md) | Storage format, platform adapters, incremental updates, verification |
 | [RA list](reports/ra-snes-games.csv) / [summary](reports/ra-snes.json), [build report](reports/snes-build-report.json), [audit resolution](reports/audit-resolution-20261004.md) | Detailed data |
 
@@ -34,13 +34,14 @@ Change against 32 MiB groups on real data (first 16 family-ordered groups, 484 M
 
 | Item | Value |
 | --- | --- |
-| ROM records / games / releases | 4,293 / 1,996 / 4,329 |
+| ROM records / games / releases | 5,239 / 1,996 / 4,329 |
 | DAT coverage per version | 20260710-203222: 4,255/4,318; 20261003-140326: 4,261/4,331 |
-| Local ROMs in no DAT | 32 |
+| Local ROMs in no DAT | 978 |
+| ROM files of the RetroAchievements set | in a No-Intro DAT 889, RA only 932, hash not in the latest RA snapshot 15 ([list](reports/ra-snes-collection-unknown.csv)); RA games still without a local ROM: [gap list](reports/ra-snes-missing.csv) |
 | No-Intro DB Export + Dump Log 20261003-140326 | 4,365 archives, 5,457 file identities, 5,399 documented hardware assertions; Dump Log Verified 1,871 |
-| RetroAchievements (console 3) | 1,185 games with achievements: 673 with a local ROM (914 ROMs), 0 DAT only, 1 DB file only, 511 without a No-Intro counterpart |
+| RetroAchievements (console 3) | 1,185 games with achievements: 1,089 with a local ROM (1,845 ROMs), 0 DAT only, 0 DB file only, 96 without a No-Intro counterpart |
 | Chinese names | 3,942 of 4,154 rows translated (2,030 unique); 3,909 local ROMs have a Chinese name |
-| Populated-database audit | 4,297 objects, 37 groups, 4,813 archive plans, all passed |
+| Populated-database audit | 5,283 objects, 57 groups, 5,814 archive plans, all passed |
 
 Every source ZIP is reproduced byte-for-byte from its TorrentZip plan (`v_file_checksums.exported_bytes_equal_source`).
 

@@ -1,0 +1,227 @@
+{
+ "sources": {
+  "Nintendo - Family Computer Disk System (FDS)": 405,
+  "Nintendo - Family Computer Disk System (FDS) (Aftermarket)": 2,
+  "Nintendo - Family Computer Disk System (QD)": 295,
+  "RA - Nintendo Entertainment System": 27
+ },
+ "dats": [
+  "Nintendo - Family Computer Disk System (FDS) (Parent-Clone) (20260930-033941).zip",
+  "Nintendo - Family Computer Disk System (QD) (Parent-Clone) (20260930-033941).zip"
+ ],
+ "families": 318,
+ "files": 729,
+ "zip_MiB": 33.72,
+ "raw_MiB": 82.53,
+ "unique_files_MiB": 79.59,
+ "rows": [
+  {
+   "config": "B4K_C16M",
+   "MiB": 10.2,
+   "unique_MiB": 48.07,
+   "groups": 4,
+   "blocks": 12308,
+   "block_refs": 21137,
+   "meta_MiB_est": 1.863,
+   "s": 6.0,
+   "total_MiB": 12.063
+  },
+  {
+   "config": "B4K_C32M",
+   "MiB": 10.066,
+   "unique_MiB": 48.07,
+   "groups": 2,
+   "blocks": 12308,
+   "block_refs": 21137,
+   "meta_MiB_est": 1.863,
+   "s": 11.7,
+   "total_MiB": 11.929
+  },
+  {
+   "config": "B4K_C64M",
+   "MiB": 9.861,
+   "unique_MiB": 48.07,
+   "groups": 1,
+   "blocks": 12308,
+   "block_refs": 21137,
+   "meta_MiB_est": 1.863,
+   "s": 17.6,
+   "total_MiB": 11.724
+  },
+  {
+   "config": "B4K_C128M",
+   "MiB": 9.861,
+   "unique_MiB": 48.07,
+   "groups": 1,
+   "blocks": 12308,
+   "block_refs": 21137,
+   "meta_MiB_est": 1.863,
+   "s": 17.2,
+   "total_MiB": 11.724
+  },
+  {
+   "config": "B8K_C16M",
+   "MiB": 10.267,
+   "unique_MiB": 52.7,
+   "groups": 4,
+   "blocks": 6747,
+   "block_refs": 10570,
+   "meta_MiB_est": 0.982,
+   "s": 5.8,
+   "total_MiB": 11.249
+  },
+  {
+   "config": "B8K_C32M",
+   "MiB": 10.107,
+   "unique_MiB": 52.7,
+   "groups": 2,
+   "blocks": 6747,
+   "block_refs": 10570,
+   "meta_MiB_est": 0.982,
+   "s": 10.6,
+   "total_MiB": 11.089
+  },
+  {
+   "config": "B8K_C64M",
+   "MiB": 9.868,
+   "unique_MiB": 52.7,
+   "groups": 1,
+   "blocks": 6747,
+   "block_refs": 10570,
+   "meta_MiB_est": 0.982,
+   "s": 17.9,
+   "total_MiB": 10.85
+  },
+  {
+   "config": "B8K_C128M",
+   "MiB": 9.868,
+   "unique_MiB": 52.7,
+   "groups": 1,
+   "blocks": 6747,
+   "block_refs": 10570,
+   "meta_MiB_est": 0.982,
+   "s": 17.9,
+   "total_MiB": 10.85
+  },
+  {
+   "config": "B16K_C16M",
+   "MiB": 10.354,
+   "unique_MiB": 60.61,
+   "groups": 4,
+   "blocks": 3881,
+   "block_refs": 5287,
+   "meta_MiB_est": 0.535,
+   "s": 6.2,
+   "total_MiB": 10.889
+  },
+  {
+   "config": "B16K_C32M",
+   "MiB": 10.107,
+   "unique_MiB": 60.61,
+   "groups": 2,
+   "blocks": 3881,
+   "block_refs": 5287,
+   "meta_MiB_est": 0.535,
+   "s": 9.7,
+   "total_MiB": 10.642
+  },
+  {
+   "config": "B16K_C64M",
+   "MiB": 9.881,
+   "unique_MiB": 60.61,
+   "groups": 1,
+   "blocks": 3881,
+   "block_refs": 5287,
+   "meta_MiB_est": 0.535,
+   "s": 20.5,
+   "total_MiB": 10.416
+  },
+  {
+   "config": "B16K_C128M",
+   "MiB": 9.881,
+   "unique_MiB": 60.61,
+   "groups": 1,
+   "blocks": 3881,
+   "block_refs": 5287,
+   "meta_MiB_est": 0.535,
+   "s": 22.2,
+   "total_MiB": 10.416
+  },
+  {
+   "config": "B64K_C16M",
+   "MiB": 10.506,
+   "unique_MiB": 77.15,
+   "groups": 5,
+   "blocks": 1236,
+   "block_refs": 1324,
+   "meta_MiB_est": 0.157,
+   "s": 8.5,
+   "total_MiB": 10.663
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 10.391,
+   "unique_MiB": 77.15,
+   "groups": 3,
+   "blocks": 1236,
+   "block_refs": 1324,
+   "meta_MiB_est": 0.157,
+   "s": 10.8,
+   "total_MiB": 10.548
+  },
+  {
+   "config": "B64K_C64M",
+   "MiB": 10.271,
+   "unique_MiB": 77.15,
+   "groups": 2,
+   "blocks": 1236,
+   "block_refs": 1324,
+   "meta_MiB_est": 0.157,
+   "s": 19.6,
+   "total_MiB": 10.428
+  },
+  {
+   "config": "B64K_C128M",
+   "MiB": 9.898,
+   "unique_MiB": 77.15,
+   "groups": 1,
+   "blocks": 1236,
+   "block_refs": 1324,
+   "meta_MiB_est": 0.157,
+   "s": 25.3,
+   "total_MiB": 10.055
+  },
+  {
+   "config": "B64K_C128M_nocut",
+   "MiB": 9.898,
+   "unique_MiB": 77.59,
+   "groups": 1,
+   "blocks": 1242,
+   "block_refs": 1321,
+   "meta_MiB_est": 0.157,
+   "s": 24.8,
+   "total_MiB": 10.055
+  },
+  {
+   "config": "B8K_C128M_nocut",
+   "MiB": 9.876,
+   "unique_MiB": 55.05,
+   "groups": 1,
+   "blocks": 7047,
+   "block_refs": 10567,
+   "meta_MiB_est": 1.008,
+   "s": 23.2,
+   "total_MiB": 10.884
+  }
+ ],
+ "per_file_lzma_MiB": 28.21,
+ "seconds": 282,
+ "method": "Whole local collection (no sample): No-Intro FDS and QD folders plus FDS images found in the RA NES folder. Blocks restart at the fwNES header and at every side; family order from the newest FDS Parent-Clone DAT (QD entries join the FDS family of the same name). total_MiB = compressed groups + block metadata estimate (90 bytes per block, 40 per reference).",
+ "decision_en": "64 KiB blocks (one block per side) in a single 128 MiB group: 10.055 MiB in total against 33.72 MiB of ZIPs and 28.21 MiB with per-file LZMA. With one group the compressed size is about 9.9 MiB for every block size; smaller blocks only add metadata. 64 MiB groups split the platform into two groups (+3.8%). Side-aligned cuts do not change the compressed size but let headered and headerless copies of a side deduplicate.",
+ "decision_zh": "64 KiB 块（每面一块），全平台一个 128 MiB 组：合计 10.055 MiB，原 ZIP 33.72 MiB，逐文件 LZMA 28.21 MiB。单组时各种块大小压缩后都约 9.9 MiB，块越小元数据越多；64 MiB 组会拆成两组（+3.8%）。按面切块不改变压缩大小，但能让有头、无头版本的同一面去重。",
+ "chosen": {
+  "block": 65536,
+  "group_cap": 134217728,
+  "config": "B64K_C128M"
+ }
+}

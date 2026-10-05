@@ -157,13 +157,16 @@ def refresh_matches(c):
 
 def read_csv(data):
     reader = csv.DictReader(io.StringIO(data.decode('utf-8-sig'), newline=''))
-    if reader.fieldnames != ['Name EN', 'Name CN']:
-        raise ValueError('CSV headers must be Name EN,Name CN')
+    # Both header spellings occur in the source files; the columns mean the same.
+    aliases = {('Name EN', 'Name CN'): ('Name EN', 'Name CN'), ('EN Name', 'CN Name'): ('EN Name', 'CN Name')}
+    cols = aliases.get(tuple(reader.fieldnames or ()))
+    if cols is None:
+        raise ValueError('CSV headers must be Name EN,Name CN (or EN Name,CN Name)')
     rows = []
     for number, row in enumerate(reader, 2):
         if None in row or any(value is None for value in row.values()):
             raise ValueError(f'Invalid column count at record {number}')
-        en, cn = row['Name EN'], row['Name CN']
+        en, cn = row[cols[0]], row[cols[1]]
         if not match_key(en):
             raise ValueError(f'Empty English match key at record {number}')
         rows.append((number, en, cn))

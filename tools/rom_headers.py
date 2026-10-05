@@ -278,4 +278,75 @@ def parse_gba(data):
     return out
 
 
-PARSERS = {'snes': parse_snes, 'megadrive': parse_md, 'gb': parse_gb, 'gbc': parse_gb, 'gba': parse_gba}
+# ---------------------------------------------------------------- Famicom Disk System
+
+FDS_SIDE = {'fds': 65500, 'qd': 65536}  # No-Intro FDS sides hold blocks without CRCs or gaps; QD sides keep a CRC after each block
+FDS_MAGIC = b'*NINTENDO-HVC*'
+
+
+def fds_layout(data):
+    """(image format, header length, side size) of a disk image: fwNES 'FDS\\x1a' header, then FDS or QD sides."""
+    head = 16 if data[:4] == b'FDS\x1a' else 0
+    body = len(data) - head
+    if len(data) == 8192 and data[head + 1:head + 15] != FDS_MAGIC: return 'bios', 0, 0
+    for fmt in ('qd', 'fds'):  # 131072 = 2 QD sides; 131000 = 2 FDS sides
+        if body and body % FDS_SIDE[fmt] == 0: return fmt, head, FDS_SIDE[fmt]
+    return ('fds' if data[head + 1:head + 15] == FDS_MAGIC else 'unknown'), head, FDS_SIDE['fds']
+
+
+def _fds_date(b):
+    """Declared BCD date (YY MM DD). The year is in the Japanese era counting used on these disks: values 50-64
+    are read as Showa (1925 + YY), smaller values as Heisei (1988 + YY); the raw BCD is kept as well."""
+    try:
+        y, m, d = (int(f'{x:02x}') for x in b)
+    except ValueError: return None
+    if not (1 <= m <= 12 and 1 <= d <= 31): return None
+    year = 1925 + y if 50 <= y <= 64 else 1988 + y if y < 50 else None
+    return f'{year:04d}-{m:02d}-{d:02d}' if year else None
+
+
+def parse_fds(data):
+    """Disk information block (block 1) of every side; file-amount block (block 2). Descriptive only."""
+    out = dict(format='unknown', parse_status='unclassified', components=[], hardware=None, warnings=[])
+    fmt, head, side = fds_layout(data)
+    if fmt == 'bios':
+        out.update(format='bios', components=[('bios', 0, len(data))]); return out
+    out['format'] = fmt
+    if head: out['components'].append(('fwnes_header', 0, head))
+    sides = []
+    for n, off in enumerate(range(head, len(data), side)):
+        chunk = data[off:off + side]; out['components'].append(('side', off, len(chunk)))
+        if len(chunk) < 56 or chunk[0] != 1 or chunk[1:15] != FDS_MAGIC:
+            sides.append({'side': n, 'disk_info': False}); continue
+        b2 = 58 if fmt == 'qd' else 56
+        sides.append({'side': n, 'disk_info': True, 'manufacturer_code': chunk[15], 'game_code': _text(chunk[16:19]), 'game_type': _text(chunk[19:20]) or None,
+                      'revision': chunk[20], 'side_number': chunk[21], 'disk_number': chunk[22], 'disk_type': chunk[23], 'boot_file_code': chunk[25],
+                      'manufacturing_date_bcd': chunk[31:34].hex(), 'manufacturing_date': _fds_date(chunk[31:34]), 'country_code': chunk[34],
+                      'rewrite_date_bcd': chunk[44:47].hex(), 'file_amount': chunk[b2 + 1] if len(chunk) > b2 + 1 and chunk[b2] == 2 else None})
+    first = next((x for x in sides if x['disk_info']), None)
+    if first is None:
+        out['warnings'].append('no disk information block found'); return out
+    trailing = (len(data) - head) % side
+    hw = dict(image_format=fmt, fwnes_header=int(bool(head)), fwnes_sides=data[4] if head else None, side_size=side, sides=len(sides),
+              valid_sides=sum(x['disk_info'] for x in sides), manufacturer_code=first['manufacturer_code'], game_code=first['game_code'],
+              game_type=first['game_type'], revision=first['revision'], disk_type=first['disk_type'],
+              manufacturing_date=first['manufacturing_date'], manufacturing_date_bcd=first['manufacturing_date_bcd'], country_code=first['country_code'],
+              trailing_bytes=trailing, sides_json=_js(sides),
+              raw_json=_js({'parser': PARSER_VERSION, 'interpretation': 'disk information block declarations per side; physical disk and writer history require external evidence'}))
+    out['hardware'] = hw; out['parse_status'] = 'valid'
+    if hw['valid_sides'] != hw['sides']: out['warnings'].append('side without a disk information block')
+    if head and data[4] != len(sides): out['warnings'].append('fwNES side count differs from the image')
+    if trailing: out['warnings'].append('image length is not a whole number of sides')
+    if len({(x['game_code'], x['revision']) for x in sides if x['disk_info']}) > 1: out['warnings'].append('sides declare different game codes or revisions')
+    if out['warnings']: out['parse_status'] = 'warning'
+    return out
+
+
+def fds_cuts(data):
+    """Blocks restart at the fwNES header and at every side, so headered/headerless copies and shared sides deduplicate."""
+    fmt, head, side = fds_layout(data)
+    if fmt == 'bios': return set()
+    return {head} | set(range(head, len(data), side)) if head else set(range(0, len(data), side))
+
+
+PARSERS = {'snes': parse_snes, 'megadrive': parse_md, 'gb': parse_gb, 'gbc': parse_gb, 'gba': parse_gba, 'fds': parse_fds}

@@ -3,8 +3,10 @@
 python3 -B tools/update_db.py FULL.sqlite [--dat P ...] [--nointro DB.zip DUMPLOG.zip] [--roms PATH ...]
         [--ra] [--names CSV] [--discover] [--no-compact] [--audit] [--catalog CATALOG.sqlite]
 
---discover  scan ~/Sync/Datfiles and /mnt/MyShare/No-Intro for this platform's DATs, DB/Dumplog
-            pairs and ROM ZIPs that are not in the database yet (by content hash and path).
+--discover  scan ~/Sync/Datfiles, /mnt/MyShare/No-Intro and /mnt/MyShare/RetroAchievements for this platform's
+            DATs, DB/Dumplog pairs and ROM ZIPs that are not in the database yet (by content hash and path).
+Every ROM folder is registered in source_collections; ROMs outside every DAT get the family of the stored ROMs they
+share the most blocks with (hacks, translations), else a title family.
 Every step is idempotent: a DAT, DB/Dumplog pair or ZIP already stored is skipped.
 
 Order: schema additions -> DATs (scan, diff against the previous newest, extend releases) ->
@@ -18,20 +20,23 @@ import xml.etree.ElementTree as ET
 TOOLS = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS))
 import build_db as B  # noqa: E402
+RA_ROOT = pathlib.Path('/mnt/MyShare/RetroAchievements')
+# RetroAchievements-curated ROM sets (hashes as RA lists them; includes hacks, translations and homebrew outside No-Intro).
+RA_FOLDERS = {'nes': 'RA - Nintendo Entertainment System', 'snes': 'RA - Super Nintendo Entertainment System', 'megadrive': 'RA - Sega Genesis',
+              'gb': 'RA - Nintendo Game Boy', 'gbc': 'RA - Nintendo Game Boy Color', 'gba': 'RA - Nintendo Game Boy Advance',
+              'fds': 'RA - Nintendo Entertainment System'}  # the RA NES set also holds the FDS disk images
+# Files of another platform found in a mixed folder are skipped and listed in the report (Famicom Disk System images
+# belong to a separate FDS database, not to NES).
+OTHER_PLATFORM_EXT = {'nes': {'.fds', '.qd'}, 'fds': {'.nes', '.unf', '.unif', '.nsf'}}
 
 
 def log(*a): print(time.strftime('%H:%M:%S'), *a, flush=True)
 
 
 def ensure_schema(db):
-    """Create schema_v4.sql objects added after this database was built (new tables are empty)."""
-    import re
-    fin = importlib.import_module('finalize_db')
-    existing = {r[0] for r in db.c.execute('SELECT name FROM sqlite_master')}; added = []
-    for st in fin.statements((TOOLS / 'schema_v4.sql').read_text()):
-        m = re.match(r'CREATE\s+(INDEX|VIEW|TRIGGER|TABLE)\s+(\w+)', st)
-        if m and m[2] not in existing: db.c.execute(st); added.append(m[2])
-    return added
+    """Bring the database up to tools/schema_v4.sql (see finalize_db.sync_schema)."""
+    added, replaced = importlib.import_module('finalize_db').sync_schema(db.c)
+    return {'added': added, 'replaced': replaced}
 
 
 def backfill_families(db, eng):
@@ -45,10 +50,23 @@ def backfill_families(db, eng):
             (SELECT original_name FROM files f WHERE f.object_id=r.object_id AND f.kind='rom' ORDER BY f.id LIMIT 1) AS name
             FROM roms r JOIN objects o ON o.id=r.object_id JOIN objects b ON b.id=coalesce(r.body_object_id,r.object_id)
             WHERE b.storage_kind='chunks' AND NOT EXISTS(SELECT 1 FROM object_families f WHERE f.object_id=coalesce(r.body_object_id,r.object_id))''').fetchall():
-        hit = index.get((r['bcrc'], r['bsize'])) or index.get((r['crc32'], r['size']))
+        hit = index.get((r['bcrc'], r['bsize'])) or index.get((r['crc32'], r['size'])) or shared_block_family(db, r['pid'])
         key, basis = hit if hit else (eng.base_title(r['name'] or str(r['pid'])), 'title')
         db.set_family(r['pid'], key, basis); n[basis] += 1
     return dict(n)
+
+
+def shared_block_family(db, oid, max_refs=32, min_share=0.1):
+    """Family of the stored objects that share the most blocks with `oid` (hacks, translations and revisions not in any
+    DAT keep most banks of their original). Blocks referenced by more than `max_refs` objects (padding, fill) are ignored.
+    Returns (family key, 'shared_blocks') when at least `min_share` of the object's blocks are shared, else None."""
+    total = db.c.execute('SELECT count(DISTINCT chunk_id) FROM object_chunks WHERE object_id=?', (oid,)).fetchone()[0]
+    if not total: return None
+    row = db.c.execute('''SELECT f.family_key,count(DISTINCT oc.chunk_id) AS n FROM object_chunks oc
+        JOIN object_chunks o2 ON o2.chunk_id=oc.chunk_id AND o2.object_id!=oc.object_id JOIN object_families f ON f.object_id=o2.object_id
+        WHERE oc.object_id=? AND (SELECT count(DISTINCT object_id) FROM object_chunks x WHERE x.chunk_id=oc.chunk_id)<=?
+        GROUP BY f.family_key ORDER BY n DESC,f.family_key LIMIT 1''', (oid, max_refs)).fetchone()
+    return (row['family_key'], 'shared_blocks') if row and row['n'] >= max(1, min_share * total) else None
 
 
 def backfill_ra_hashes(db):
@@ -60,6 +78,19 @@ def backfill_ra_hashes(db):
         md5 = db.c.execute('SELECT md5 FROM objects WHERE id=?', (body,)).fetchone()[0]
         method = 'md5 after the 16-byte NES header (rcheevos nes)' if body != r['object_id'] else 'md5 of complete file (rcheevos buffer)'
         db.c.execute('INSERT INTO rom_ra_hashes VALUES (?,?,?)', (r['id'], md5, method)); n += 1
+    return n
+
+
+def register_collections(db, paths=()):
+    """Record every folder ROM ZIPs come from as a source collection (No-Intro set, RetroAchievements set, other)."""
+    roots = {str(pathlib.Path(r[0]).parent) for r in db.c.execute("""SELECT DISTINCT a.source_path FROM files a WHERE a.kind='archive' AND a.parent_file_id IS NULL
+             AND a.source_path IS NOT NULL AND EXISTS(SELECT 1 FROM files m WHERE m.parent_file_id=a.id AND m.kind='rom')""")}
+    roots |= {str(p.resolve()) for p in paths if p.is_dir()}
+    n = 0
+    for root in sorted(roots):
+        kind = 'nointro' if root.startswith(str(B.NOINTRO)) else 'retroachievements' if root.startswith(str(RA_ROOT)) else 'other'
+        n += db.c.execute('INSERT OR IGNORE INTO source_collections(kind,name,root_path,registered_at) VALUES (?,?,?,?)',
+                          (kind, pathlib.Path(root).name, root, B.datetime_now())).rowcount
     return n
 
 
@@ -130,27 +161,36 @@ def main():
         report['schema_added'] = ensure_schema(db)
         report['families_backfilled'] = backfill_families(db, eng)
     if args.discover:
-        for pattern in cfg.get('dat_globs', (cfg['nointro'] + ' (Parent-Clone) (*).zip',)): args.dat += B.latest(B.DATFILES.glob(pattern))
+        for pattern in B.dat_globs(cfg): args.dat += B.latest(B.DATFILES.glob(pattern))
         dbx = B.by_stamp(B.DATFILES.glob(cfg['nointro'] + ' (DB Export) (*).zip'))
-        logs = B.by_stamp(B.DATFILES.glob(cfg['nointro'] + ' * (Dump Log) (*).zip') if plat == 'nes' else B.DATFILES.glob(cfg['nointro'] + ' (Dump Log) (*).zip'))
+        logs = B.by_stamp(B.DATFILES.glob(cfg['nointro'] + ' * (Dump Log) (*).zip') if plat == 'nes' else B.DATFILES.glob(cfg.get('dumplog_glob', cfg['nointro'] + ' (Dump Log) (*).zip')))
         unpaired = sorted(p.name for k, p in {**dbx, **logs}.items() if not (k in dbx and k in logs))
         if unpaired: report['unpaired_nointro_files'] = unpaired; log('DB Export/Dump Log without a same-timestamp partner (skipped):', unpaired)
         args.nointro += [[dbx[k], logs[k]] for k in sorted(set(dbx) & set(logs))]
         args.roms += sorted(p for p in B.NOINTRO.iterdir() if p.is_dir() and (p.name == cfg['nointro'] or p.name.startswith(cfg['nointro'] + ' (')))
+        if (RA_ROOT / RA_FOLDERS[plat]).is_dir(): args.roms.append(RA_ROOT / RA_FOLDERS[plat])
 
     # DATs
-    before = {r[0] for r in db.c.execute('SELECT id FROM dat_sets')}
-    newest_before = db.c.execute('SELECT id FROM dat_sets ORDER BY version DESC,id DESC LIMIT 1').fetchone()
+    # Each DAT format (NES headered/headerless, FDS/QD, or the single Parent-Clone DAT) is diffed against its own previous
+    # newest version; the primary format extends games/releases, other formats join releases by name (B.link_format).
+    def newest_by_format():
+        out = {}
+        for r in db.c.execute('SELECT id,name FROM dat_sets ORDER BY version,id'): out[B.dat_format(cfg, r['name'])] = r['id']
+        return out
+    before = {r[0] for r in db.c.execute('SELECT id FROM dat_sets')}; prev = newest_by_format()
     with db.c:
         for p in B.latest(args.dat): db.import_dat_path(p)
     new_sets = [r[0] for r in db.c.execute('SELECT id FROM dat_sets ORDER BY version,id') if r[0] not in before]
     report['new_dat_sets'] = new_sets
     with db.c:
         for ds in new_sets: report.setdefault('scan_new', {})[ds] = db.scan(ds)
-        newest = db.c.execute('SELECT id FROM dat_sets ORDER BY version DESC,id DESC LIMIT 1').fetchone()[0]
-        if newest_before and newest != newest_before[0]:
-            report['dat_diff'] = eng.dat_diff(db, newest_before[0], newest)
-            report['catalog'] = extend_catalog(db, newest, newest_before[0])
+        now = newest_by_format()
+        for fmt in sorted(now):
+            new, old = now[fmt], prev.get(fmt)
+            if new == old: continue
+            if old is not None: report.setdefault('dat_diff', {})[f'{old}->{new}'] = eng.dat_diff(db, old, new)
+            if fmt == 0 and old is not None: report.setdefault('catalog', {})[new] = extend_catalog(db, new, old)
+            elif fmt != 0 and 0 in now: report.setdefault('catalog', {})[new] = B.link_format(db, new, [old] if old else [], now[0])
     log('DATs', json.dumps({k: report.get(k) for k in ('new_dat_sets', 'dat_diff', 'catalog')}))
 
     # No-Intro DB Export + Dumplog snapshots
@@ -163,19 +203,23 @@ def main():
     if args.nointro: log('nointro', json.dumps(report['nointro'])[:600])
 
     # ROM ZIPs: ordinary blocks first (safe, immediate), family recorded for compaction.
-    index = db.family_index(); added = 0; skipped = 0; errors = []
+    index = db.family_index(); added = 0; skipped = 0; errors = []; other_platform = []
     paths = []
     for p in args.roms: paths += sorted(p.rglob('*.zip')) if p.is_dir() else [p]
     for i, p in enumerate(paths):
         if zip_unchanged(db, p): skipped += 1; continue
-        raw = p.read_bytes()
-        with zipfile.ZipFile(p) as z: keys = [index.get((f'{x.CRC:08x}', x.file_size)) for x in z.infolist() if not x.is_dir()]
-        fam = next((k for k in keys if k), None) or (eng.base_title(p.stem), 'title')
+        with zipfile.ZipFile(p) as z: infos = [x for x in z.infolist() if not x.is_dir()]
+        foreign = sorted({pathlib.PurePosixPath(x.filename).suffix.lower() for x in infos} & OTHER_PLATFORM_EXT.get(plat, set()))
+        if foreign: other_platform.append({'path': str(p), 'extensions': foreign}); continue
+        raw = p.read_bytes(); keys = [index.get((f'{x.CRC:08x}', x.file_size)) for x in infos]
+        fam = next((k for k in keys if k), None)  # otherwise assigned after import (shared blocks, then title)
         with db.c:
             db.c.execute('SAVEPOINT onefile')
             try:
                 if db.adapter: db.import_zip_bytes(p, raw, None, None, fam)
-                else: db.import_rom_path(p, 'headerless' if '(Headerless)' in p.parent.name else 'headered')  # NES path
+                else:  # NES path: No-Intro folders declare headered/headerless; other collections are detected per file
+                    mode = 'headerless' if '(Headerless)' in p.parent.name else 'headered' if p.parent.name.startswith(cfg['nointro']) else 'auto'
+                    db.import_rom_path(p, mode)
                 added += 1
             except Exception as e: db.c.execute('ROLLBACK TO onefile'); errors.append({'path': str(p), 'error': repr(e)})
             finally: db.c.execute('RELEASE onefile')
@@ -184,7 +228,9 @@ def main():
     with db.c: n_side = B.store_sidecars(db, sidecars)
     with db.c:
         report['families_assigned'] = backfill_families(db, eng); report['ra_hashes_added'] = backfill_ra_hashes(db)
-    report['roms'] = {'zips_added': added, 'zips_already_stored': skipped, 'sidecar_files_checked': n_side, 'errors': errors}
+        report['collections_registered'] = register_collections(db, args.roms)
+    report['roms'] = {'zips_added': added, 'zips_already_stored': skipped, 'sidecar_files_checked': n_side, 'errors': errors,
+                      'skipped_other_platform': other_platform}
     log('roms', json.dumps(report['roms'])[:600])
     if not args.no_compact:
         with db.c: report['compact_solid'] = db.compact_solid(args.workers)

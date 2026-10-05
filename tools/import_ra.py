@@ -7,7 +7,7 @@ and is never written to the database, reports or logs. The stored resource is th
 import argparse, datetime, hashlib, json, os, pathlib, re, sqlite3, sys, urllib.parse, urllib.request
 
 ENDPOINT = 'https://retroachievements.org/API/API_GetGameList.php'
-CONSOLES = {'snes': 3, 'megadrive': 1, 'nes': 7, 'gb': 4, 'gbc': 6, 'gba': 5}
+CONSOLES = {'snes': 3, 'megadrive': 1, 'nes': 7, 'gb': 4, 'gbc': 6, 'gba': 5, 'fds': 81}
 TOKEN_FILE = pathlib.Path('~/Sync/API_TOKEN/retroachievements.md').expanduser()
 
 

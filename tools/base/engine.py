@@ -155,7 +155,10 @@ class DB:
         scope='nes_after_header' if mode=='headerless' else 'full'
         if h is not None:
             for plug in h.findall('clrmamepro'):
-                if plug.get('header') and (mode!='headerless' or plug.get('header')!='No-Intro_NES.xml'): raise ValueError('Unsupported DAT header-skip rule; specify supported semantics first')
+                rule=plug.get('header')
+                # No-Intro_FDS.xml: hashes describe the disk data after an optional 16-byte fwNES header.
+                if rule=='No-Intro_FDS.xml' and mode in ('auto','unspecified','headerless'): mode='headerless'; scope='fds_after_header'; continue
+                if rule and (mode!='headerless' or rule!='No-Intro_NES.xml'): raise ValueError('Unsupported DAT header-skip rule; specify supported semantics first')
         oid=self.put(data); fid=self.file(oid,name,'dat',path,parent)
         old=self.c.execute('SELECT ds.id FROM dat_sets ds JOIN files f ON f.id=ds.source_file_id WHERE f.object_id=? AND ds.mode=?',(oid,mode)).fetchone()
         if old: return old[0]
@@ -199,7 +202,7 @@ class DB:
         return status,strength,{'checked':fields,'differences':bad}
     def validate(self,rid,drid):
         target=self.target(drid); r=self.c.execute('SELECT * FROM roms WHERE id=?',(rid,)).fetchone()
-        oid=r['body_object_id'] if target['hash_scope']=='nes_after_header' else r['object_id']
+        oid=r['body_object_id'] if target['hash_scope'] in ('nes_after_header','fds_after_header') else r['object_id']
         if oid is None: return 'unverifiable'
         o=self.c.execute('SELECT * FROM objects WHERE id=?',(oid,)).fetchone(); status,strength,detail=self.compare(o,target)
         self.c.execute('INSERT INTO validations(rom_id,dat_rom_id,scope,checked_object_id,status,strength,details_json,checked_at) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(rom_id,dat_rom_id,scope) DO UPDATE SET status=excluded.status,strength=excluded.strength,details_json=excluded.details_json,checked_at=excluded.checked_at',(rid,drid,target['hash_scope'],oid,status,strength,js(detail),now()))
@@ -213,7 +216,7 @@ class DB:
         return status
     def scan(self,ds):
         scope=self.c.execute('SELECT hash_scope FROM dat_sets WHERE id=?',(ds,)).fetchone()[0]
-        col='body_object_id' if scope=='nes_after_header' else 'object_id'
+        col='body_object_id' if scope in ('nes_after_header','fds_after_header') else 'object_id'
         counts={'match':0,'mismatch':0,'unverifiable':0,'no_candidate':0}
         for t in self.c.execute('SELECT dr.* FROM dat_roms dr JOIN dat_games dg ON dg.id=dr.dat_game_id WHERE dg.dat_set_id=?',(ds,)).fetchall():
             key=next((k for k in ('sha256','sha1','md5','crc32') if t[k]),None)

@@ -161,6 +161,16 @@ class CartTests(_Base):
         self.db.set_bulk_cache(); self.assertGreaterEqual(self.db._solid_cache, sum(r[0] for r in self.db.c.execute('SELECT size FROM compression_groups')))
         self.assertTrue(self.db.audit(archives=True)['ok'])
 
+    def test_reimport_of_grouped_blocks_decodes_no_group(self):
+        a = snes_rom(seed=41); self.solid_import([('A (USA).sfc', a)], 'a')
+        self.db.clear_caches(); decoded = []; entry = self.db._solid_entry
+        self.db._solid_entry = lambda gid: (decoded.append(gid), entry(gid))[1]
+        self.loose_import('A (USA) (Copy).sfc', a, 'a')  # every block already stored in a solid group
+        self.assertEqual(decoded, [])
+        self.db._solid_entry = entry
+        oid = self.db.c.execute('SELECT object_id FROM files WHERE original_name=?', ('A (USA) (Copy).sfc',)).fetchone()[0]
+        self.assertEqual(self.db.get(oid), a)
+
     def test_v3_engine_rejects_v4_database(self):
         ns = {'__name__': 'v3'}; exec(compile((TOOLS / 'base' / 'engine.py').read_text(), 'v3', 'exec'), ns)
         with self.assertRaises(ValueError): ns['DB'](self.path)
@@ -391,6 +401,78 @@ class GameBoyTests(_Base):
         self.assertEqual((row['cgb_mode'], row['logo_is_common'], row['header_checksum_valid']), ('cgb_enhanced', 1, 1))
         self.assertEqual(self.db.c.execute('SELECT ra_md5 FROM rom_ra_hashes').fetchone()[0], hashlib.md5(a).hexdigest())
         self.assertTrue(self.db.audit(archives=True)['ok'])
+
+
+def fds_side(code=b'ABC', rev=1, side=0, size=65500, seed=0, qd=False):
+    info = bytes([1]) + b'*NINTENDO-HVC*' + bytes([0xA4]) + code + b' ' + bytes([rev, side, 0, 0, 0, 15]) + b'\xff' * 5 + bytes.fromhex('611201') + bytes([0x49])
+    info += bytes(56 - len(info))
+    body = info + (b'\x00\x00' if qd else b'') + bytes([2, 3])
+    return body + random.Random(seed * 2 + side).randbytes(size - len(body))
+
+
+def fds_image(qd=False, seed=1, header=False):
+    size = 65536 if qd else 65500
+    d = b''.join(fds_side(side=n, size=size, seed=seed, qd=qd) for n in range(2))
+    return (b'FDS\x1a\x02' + bytes(11) + d) if header else d
+
+
+class FamicomDiskSystemTests(_Base):
+    platform = 'fds'
+
+    def test_fds_qd_bios_parsing(self):
+        p = engine.parse_fds(fds_image()); h = p['hardware']
+        self.assertEqual((p['format'], p['parse_status'], h['sides'], h['valid_sides'], h['game_code'], h['revision'], h['manufacturing_date']),
+                         ('fds', 'valid', 2, 2, 'ABC', 1, '1986-12-01'))
+        self.assertEqual(json.loads(h['sides_json'])[1]['file_amount'], 3)
+        q = engine.parse_fds(fds_image(qd=True))
+        self.assertEqual((q['format'], q['hardware']['side_size'], json.loads(q['hardware']['sides_json'])[0]['file_amount']), ('qd', 65536, 3))
+        hd = engine.parse_fds(fds_image(header=True))
+        self.assertEqual((hd['hardware']['fwnes_header'], hd['hardware']['fwnes_sides'], hd['parse_status']), (1, 2, 'valid'))
+        self.assertEqual(engine.parse_fds(bytes(8192))['format'], 'bios')
+        self.assertEqual(sorted(engine.fds_cuts(fds_image(header=True))), [16, 16 + 65500])
+
+    def test_fds_headered_and_headerless_share_sides_and_ra_hash(self):
+        plain = fds_image(seed=5); headered = fds_image(seed=5, header=True)
+        self.solid_import([('D (Japan).fds', plain)], 'd')
+        new = self.solid_import([('D (Japan) (fwNES).fds', headered)], 'd')
+        self.assertEqual([d for _, d in new], [headered[:16]])  # only the fwNES header is new; both sides deduplicate
+        rows = {r[0]: r[1] for r in self.db.c.execute('SELECT f.original_name,h.ra_md5 FROM files f JOIN roms r ON r.object_id=f.object_id JOIN rom_ra_hashes h ON h.rom_id=r.id')}
+        self.assertEqual(rows['D (Japan).fds'], hashlib.md5(plain).hexdigest()); self.assertEqual(rows['D (Japan) (fwNES).fds'], hashlib.md5(plain).hexdigest())
+        shared = self.db.c.execute('''SELECT count(DISTINCT a.chunk_id) FROM object_chunks a JOIN object_chunks b ON a.chunk_id=b.chunk_id AND a.object_id<b.object_id''').fetchone()[0]
+        self.assertEqual(shared, 2)  # both sides are stored once
+        self.assertTrue(self.db.audit(archives=True)['ok'])
+
+    def test_fds_header_skip_dat_rule(self):
+        plain = fds_image(seed=9); headered = fds_image(seed=9, header=True)
+        self.solid_import([('H (Japan) (fwNES).fds', headered)], 'h')
+        dat = (f'<?xml version="1.0"?><datafile><header><name>Nintendo - Family Computer Disk System (FDS) (Parent-Clone)</name><version>20260101-000000</version>'
+               f'<clrmamepro header="No-Intro_FDS.xml"/></header><game name="H (Japan)"><description>H</description><rom name="H (Japan).fds" size="{len(plain)}" '
+               f'crc="{zlib.crc32(plain):08x}" sha1="{hashlib.sha1(plain).hexdigest()}"/></game></datafile>').encode()
+        with self.db.c:
+            ds = self.db.import_dat(dat, 'f.dat', 'auto'); counts = self.db.scan(ds)
+        self.assertEqual(tuple(self.db.c.execute('SELECT mode,hash_scope FROM dat_sets WHERE id=?', (ds,)).fetchone()), ('headerless', 'fds_after_header'))
+        self.assertEqual(counts['match'], 1)
+        r = self.db.c.execute('SELECT header,body_object_id,object_id FROM roms').fetchone()
+        self.assertEqual(bytes(r['header']), headered[:16]); self.assertNotEqual(r['body_object_id'], r['object_id'])
+        self.assertEqual(self.db.get(r['body_object_id']), plain)
+        with self.assertRaises(ValueError):  # other header-skip rules stay unsupported
+            self.db.import_dat(dat.replace(b'No-Intro_FDS.xml', b'Other.xml'), 'g.dat', 'auto')
+
+    def test_qd_dat_joins_fds_release(self):
+        fds, qd = fds_image(seed=7), fds_image(seed=7, qd=True)
+        self.solid_import([('Game (Japan).fds', fds), ('Game (Japan).qd', qd)])
+        def dat(name, ext, data):
+            return (f'<?xml version="1.0"?><datafile><header><name>{name} (Parent-Clone)</name><version>20260101-000000</version></header>'
+                    f'<game name="Game (Japan)"><description>G</description><rom name="Game (Japan).{ext}" size="{len(data)}" crc="{zlib.crc32(data):08x}" '
+                    f'sha1="{hashlib.sha1(data).hexdigest()}"/></game></datafile>').encode()
+        with self.db.c:
+            a = self.db.import_dat(dat('Nintendo - Family Computer Disk System (FDS)', 'fds', fds), 'f.dat', 'auto')
+            b = self.db.import_dat(dat('Nintendo - Family Computer Disk System (QD)', 'qd', qd), 'q.dat', 'auto')
+            for ds in (a, b): self.db.scan(ds)
+            B.build_catalog_records(self.db, a, []); st = B.link_format(self.db, b, [], a)
+        self.assertEqual(st, {'joined_same_name': 1})
+        self.assertEqual(B.dat_format(B.PLATFORMS['fds'], 'Nintendo - Family Computer Disk System (QD) (Parent-Clone)'), 1)
+        self.assertEqual(tuple(self.db.c.execute('SELECT count(DISTINCT release_id),count(*) FROM rom_releases').fetchone()), (1, 2))
 
 
 class GameBoyAdvanceTests(_Base):
