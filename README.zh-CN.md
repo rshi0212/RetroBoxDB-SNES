@@ -17,7 +17,7 @@
 | 文件／文档 | 内容 |
 | --- | --- |
 | [RetroBoxDB.SNES.Catalog.sqlite](https://github.com/rshi0212/RetroBoxDB-SNES/releases/latest/download/RetroBoxDB.SNES.Catalog.sqlite) | 公开 Catalog（Release 附件，附 `SHA256SUMS`） |
-| [存储 v4 说明](RetroBoxDB.Storage-v4.zh-CN.md)／[English](RetroBoxDB.Storage-v4.en.md) | 七个平台的存储评估、内容、RA、中文名与维护 |
+| [存储 v4 说明](RetroBoxDB.Storage-v4.zh-CN.md)／[English](RetroBoxDB.Storage-v4.en.md) | 八个平台的存储评估、内容、RA、中文名与维护 |
 | [Technical design](RetroBoxDB.Storage-v4.Technical-Design.en.md) | 存储格式、平台适配、增量更新、校验 |
 | [RA 清单](reports/ra-snes-games.csv)／[汇总](reports/ra-snes.json)、[构建报告](reports/snes-build-report.json)、[审计处理](reports/audit-resolution-20261004.md) | 逐项数据 |
 
@@ -29,7 +29,7 @@
 - 内部头部：在 LoROM 0x7FC0、HiROM 0xFFC0、ExLoROM、ExHiROM 四处按校验和互补、映射模式、标题、ROM 大小字节和复位向量打分选位置；分数不足的记为 `unclassified`（多为 Beta、原型、盗版卡和增强芯片固件）。保存映射模式、FastROM、芯片组与协处理器、SRAM、地区、厂商／游戏代码和两种校验和。
 - 512 字节 copier 头（文件大小 %1024 = 512）会单独切成一块，使正文与无头版本去重，RA 哈希也在去头后计算；本地收藏中没有这类文件。
 - 无 No-Intro 对应的 RA 游戏主要是 Hack、翻译补丁版（如 RA 的 Bahamut Lagoon、Rushing Beat 套装使用英译补丁 ROM）和 Subset。
-- RetroAchievements SNES 目录中的 Satellaview（BS-X，`.bs`）文件属于独立平台：导入时跳过并列入更新报告，留待以后单独建库。
+- RetroAchievements SNES 目录中的 Satellaview（BS-X，`.bs`）文件属于独立平台：SNES 导入时跳过，由 [RetroBoxDB-Satellaview](https://github.com/rshi0212/RetroBoxDB-Satellaview) 收录；ROM 在该库中的 RA 游戏在报告里标为 `local_other_platform`。
 
 ## 内容
 
@@ -40,7 +40,7 @@
 | 不在任何 DAT 的本地 ROM | 978 |
 | RetroAchievements 集合中的 ROM 文件 | DAT 中有 889，仅 RA 收录 932，哈希不在最新 RA 快照 15（[清单](reports/ra-snes-collection-unknown.csv)）；仍缺本地 ROM 的 RA 游戏见 [缺口清单](reports/ra-snes-missing.csv) |
 | No-Intro DB Export＋Dump Log 20261003-140326 | 4,365 个档案、5,457 个文件身份、5,399 条有文档的硬件声明；Dump Log Verified 1,871 |
-| RetroAchievements（console 3） | 有成就的游戏 1,185 个：本地有 ROM 1,089（1,845 个 ROM），仅 DAT 有 0，仅 DB 文件 0，无 No-Intro 对应 96 |
+| RetroAchievements（console 3） | 有成就的游戏 1,185 个：本地有 ROM 1,089（1,845 个 ROM），ROM 在兄弟库中 6，仅 DAT 有 0，仅 DB 文件 0，无 No-Intro 对应 90 |
 | 中文名 | 4,154 条记录中 3,942 条有中文（2,030 个唯一名）；本地 ROM 3,909 个有中文名 |
 | 完整库审计 | 5,243 个对象、57 个组、5,774 个 ZIP 配方，全部通过 |
 

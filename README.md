@@ -17,7 +17,7 @@ Single-file SQLite preservation database for Super Nintendo Entertainment System
 | File / document | Content |
 | --- | --- |
 | [RetroBoxDB.SNES.Catalog.sqlite](https://github.com/rshi0212/RetroBoxDB-SNES/releases/latest/download/RetroBoxDB.SNES.Catalog.sqlite) | Public Catalog (Release asset with `SHA256SUMS`) |
-| [Storage v4 guide](RetroBoxDB.Storage-v4.en.md) / [中文](RetroBoxDB.Storage-v4.zh-CN.md) | Storage evaluation, contents, RA, names and maintenance for all seven platforms |
+| [Storage v4 guide](RetroBoxDB.Storage-v4.en.md) / [中文](RetroBoxDB.Storage-v4.zh-CN.md) | Storage evaluation, contents, RA, names and maintenance for all eight platforms |
 | [Technical design](RetroBoxDB.Storage-v4.Technical-Design.en.md) | Storage format, platform adapters, incremental updates, verification |
 | [RA list](reports/ra-snes-games.csv) / [summary](reports/ra-snes.json), [build report](reports/snes-build-report.json), [audit resolution](reports/audit-resolution-20261004.md) | Detailed data |
 
@@ -29,7 +29,7 @@ Change against 32 MiB groups on real data (first 16 family-ordered groups, 484 M
 - Internal header: the location (LoROM 0x7FC0, HiROM 0xFFC0, ExLoROM, ExHiROM) is chosen by a score over checksum/complement, map mode, title, ROM-size byte and reset vector; below the threshold a dump stays `unclassified` (mostly betas, prototypes, pirate carts and enhancement-chip firmware). Map mode, FastROM, chipset and coprocessor, SRAM size, region, maker/game codes and both checksums are stored.
 - A 512-byte copier header (file size % 1024 = 512) would be cut off as its own block so the body deduplicates with headerless dumps, and the RA hash is computed after it; the local collection contains none.
 - Most RA games without a No-Intro counterpart are hacks, translation patches (for example the RA sets for Bahamut Lagoon and Rushing Beat use English-patched ROMs) and subsets.
-- Satellaview (BS-X) `.bs` files found in the RetroAchievements SNES folder belong to a separate platform: they are skipped, listed in the update report, and left for a future Satellaview database.
+- Satellaview (BS-X) `.bs` files found in the RetroAchievements SNES folder belong to a separate platform: the SNES import skips them and [RetroBoxDB-Satellaview](https://github.com/rshi0212/RetroBoxDB-Satellaview) holds them; RA games whose ROM is there are reported as `local_other_platform`.
 
 ## Contents
 
@@ -40,7 +40,7 @@ Change against 32 MiB groups on real data (first 16 family-ordered groups, 484 M
 | Local ROMs in no DAT | 978 |
 | ROM files of the RetroAchievements set | in a No-Intro DAT 889, RA only 932, hash not in the latest RA snapshot 15 ([list](reports/ra-snes-collection-unknown.csv)); RA games still without a local ROM: [gap list](reports/ra-snes-missing.csv) |
 | No-Intro DB Export + Dump Log 20261003-140326 | 4,365 archives, 5,457 file identities, 5,399 documented hardware assertions; Dump Log Verified 1,871 |
-| RetroAchievements (console 3) | 1,185 games with achievements: 1,089 with a local ROM (1,845 ROMs), 0 DAT only, 0 DB file only, 96 without a No-Intro counterpart |
+| RetroAchievements (console 3) | 1,185 games with achievements: 1,089 with a local ROM (1,845 ROMs), 6 with the ROM in a sibling database, 0 DAT only, 0 DB file only, 90 without a No-Intro counterpart |
 | Chinese names | 3,942 of 4,154 rows translated (2,030 unique); 3,909 local ROMs have a Chinese name |
 | Populated-database audit | 5,243 objects, 57 groups, 5,774 archive plans, all passed |
 

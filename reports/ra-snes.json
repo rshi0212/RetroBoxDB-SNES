@@ -5,14 +5,16 @@
   "ra_games_with_achievements": 1185,
   "status_totals": {
     "local": 1089,
+    "local_other_platform": 6,
     "dat_only": 0,
     "nointro_db_only": 0,
-    "unmatched": 96
+    "unmatched": 90
   },
   "by_category": {
     "Official": {
       "local": 680,
-      "unmatched": 32
+      "unmatched": 26,
+      "local_other_platform": 6
     },
     "Prototype": {
       "local": 11
@@ -36,6 +38,10 @@
       "unmatched": 2
     }
   },
+  "sibling_databases": [
+    "satellaview"
+  ],
+  "shared_console_scope": false,
   "local_roms_with_achievements": 1845,
   "rule": "RA hash = MD5 of the file after a 512-byte copier header when size % 8192 == 512, otherwise of the whole file; exact hash equality only",
   "local_games_by_source": {
@@ -52,7 +58,7 @@
   },
   "collection_files_with_unknown_ra_hash": 15,
   "missing_by_category": {
-    "Official": 32,
+    "Official": 26,
     "Hack": 60,
     "Homebrew": 2,
     "Hack/Demo": 2

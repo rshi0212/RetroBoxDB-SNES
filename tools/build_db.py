@@ -41,6 +41,9 @@ PLATFORMS = {
     'gba': dict(label='GBA', name='Nintendo Game Boy Advance', nointro='Nintendo - Game Boy Advance', batocera='gba',
                 names=ROOT / 'data' / 'Nintendo - Game Boy Advance.csv',
                 block=1048576, solid=256 * MIB, dictionary=256 * MIB, workers=2),
+    # BS-X memory packs; no Chinese name source exists yet (names are skipped while the CSV is absent).
+    'satellaview': dict(label='Satellaview', name='Nintendo Satellaview', nointro='Nintendo - Satellaview', batocera='satellaview',
+                        names=ROOT / 'data' / 'Nintendo - Satellaview.csv', block=32768, solid=256 * MIB, dictionary=256 * MIB, workers=1),
     # Two No-Intro formats of the same disks: FDS (primary: games and releases) and QD (entries join the FDS release of
     # the same name). The whole platform fits in one 128 MiB group (assessment/data/storage-experiment-fds.json).
     'fds': dict(label='FDS', name='Nintendo Family Computer Disk System', nointro='Nintendo - Family Computer Disk System', batocera='fds',

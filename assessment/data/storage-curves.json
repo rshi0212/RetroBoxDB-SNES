@@ -129,6 +129,26 @@
     "change_pct": -1.9,
     "seconds": 7199
    }
+  },
+  "fds": {
+   "base_cap_mib": 32,
+   "curve_pct": {
+    "64": -1.15,
+    "128": -4.75,
+    "256": -4.75
+   },
+   "curve_basis": "whole collection with 64 KiB blocks, 77 MiB (one group from 128 MiB)",
+   "chosen_cap_mib": 128
+  },
+  "satellaview": {
+   "base_cap_mib": 32,
+   "curve_pct": {
+    "64": -1.28,
+    "128": -3.33,
+    "256": -6.32
+   },
+   "curve_basis": "whole collection with 16 KiB blocks, 256 MiB unique",
+   "chosen_cap_mib": 256
   }
  }
 }

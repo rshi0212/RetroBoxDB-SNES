@@ -2,7 +2,7 @@
 
 python3 -B -m unittest tests/test_v4.py -v   (from the repository root)
 """
-import hashlib, importlib, io, json, pathlib, random, sqlite3, sys, tempfile, unittest, zipfile, zlib
+import subprocess, hashlib, importlib, io, json, pathlib, random, sqlite3, sys, tempfile, unittest, zipfile, zlib
 
 TOOLS = pathlib.Path(__file__).resolve().parents[1] / 'tools'
 sys.path.insert(0, str(TOOLS))
@@ -475,6 +475,48 @@ class FamicomDiskSystemTests(_Base):
         self.assertEqual(tuple(self.db.c.execute('SELECT count(DISTINCT release_id),count(*) FROM rom_releases').fetchone()), (1, 2))
 
 
+def bsx_pack(seed=3, base=0xFFB0, size=1 << 20):
+    d = bytearray(random.Random(seed).randbytes(size)); h = bytearray(0x30)
+    h[0:2] = b'01'; h[2:6] = bytes([0, 1, 0, 0]); h[0x10:0x20] = b'BS TEST TITLE   '; h[0x20:0x24] = bytes([15, 0, 0, 0])
+    h[0x26] = 5 << 4; h[0x27] = 20 << 3; h[0x28] = 0x21 if base == 0xFFB0 else 0x20; h[0x29] = 0x30; h[0x2A] = 0x33; h[0x2B] = 2
+    h[0x2C:0x2E] = (0xFFFF ^ 0x1234).to_bytes(2, 'little'); h[0x2E:0x30] = (0x1234).to_bytes(2, 'little')
+    d[base:base + 0x30] = h; return bytes(d)
+
+
+class SatellaviewTests(_Base):
+    platform = 'satellaview'
+
+    def test_bsx_header_and_base_cartridge(self):
+        p = engine.parse_bsx(bsx_pack()); h = p['hardware']
+        self.assertEqual((p['format'], p['parse_status'], h['mapping'], h['maker_code'], h['title'], h['broadcast_month'], h['broadcast_day'], h['checksum_pair_valid']),
+                         ('bs', 'valid', 'hirom', '01', 'BS TEST TITLE', 5, 20, 1))
+        self.assertEqual(engine.parse_bsx(bsx_pack(base=0x7FB0))['hardware']['mapping'], 'lorom')
+        self.assertEqual(engine.parse_bsx(bytes(1 << 20))['parse_status'], 'unclassified')
+        cart = snes_rom(seed=101); b = engine.parse_bsx(cart)
+        self.assertEqual((b['format'], b['table']), ('snes_cartridge', 'snes_hardware'))
+        self.solid_import([('P (Japan).bs', bsx_pack(seed=4)), ('[BIOS] BS-X (Japan).sfc', cart)])
+        self.assertEqual(self.db.c.execute('SELECT count(*) FROM bsx_hardware').fetchone()[0], 1)
+        self.assertEqual(self.db.c.execute('SELECT count(*) FROM snes_hardware').fetchone()[0], 1)
+        self.assertTrue(self.db.audit(archives=True)['ok'])
+
+    def test_ra_report_sibling_and_shared_console(self):
+        rr = importlib.import_module('ra_report')
+        mine = bsx_pack(seed=6); self.solid_import([('Mine (Japan).bs', mine)])
+        other = self.root / 'snes.sqlite'; B.create(other, 'snes', B.schema_v4('snes')); sdb = engine.DB(other)
+        theirs = snes_rom(seed=102)
+        raw = zip_of('Theirs (Japan).sfc', theirs); zp = self.root / 't.zip'; zp.write_bytes(raw)
+        with sdb.c: sdb.import_zip_bytes(zp, raw, None, None, None)
+        sdb.c.close()
+        ra = importlib.import_module('import_ra')
+        resp = [{'ID': 1, 'ConsoleID': 3, 'Title': 'Mine', 'NumAchievements': 5, 'Hashes': [hashlib.md5(mine).hexdigest()]},
+                {'ID': 2, 'ConsoleID': 3, 'Title': 'Theirs', 'NumAchievements': 5, 'Hashes': [hashlib.md5(theirs).hexdigest()]},
+                {'ID': 3, 'ConsoleID': 3, 'Title': 'Nobody', 'NumAchievements': 5, 'Hashes': ['0' * 32]}]
+        with self.db.c: ra.import_snapshot(self.db.c, 'satellaview', json.dumps(resp).encode(), '2026-10-05T00:00:00+00:00')
+        out = rr.main(str(self.path), str(self.root / 'r'), {'snes': str(other)}, False)
+        self.assertEqual(out['status_totals'], {'local': 1, 'local_other_platform': 1, 'dat_only': 0, 'nointro_db_only': 0, 'unmatched': 1})
+        self.assertEqual(rr.main(str(self.path), str(self.root / 'r2'), {'snes': str(other)}, True)['ra_games_with_achievements'], 1)
+
+
 class GameBoyAdvanceTests(_Base):
     platform = 'gba'
 
@@ -557,6 +599,22 @@ class MaintenanceTests(_Base):
         self.assertIsNone(U.shared_block_family(self.db, oid('New (USA).sfc')))
         self.assertIn('.fds', U.OTHER_PLATFORM_EXT['nes']); self.assertIn('.bs', U.OTHER_PLATFORM_EXT['snes'])
         self.assertIn('.nes', U.OTHER_PLATFORM_EXT['fds'])
+
+
+class ExportSetTests(_Base):
+    def test_duplicate_dat_member_exported_once(self):
+        a = snes_rom(seed=111); self.solid_import([('Dup (Japan).sfc', a)])
+        rom = f'<rom name="Dup (Japan).sfc" size="{len(a)}" crc="{zlib.crc32(a):08x}" sha1="{hashlib.sha1(a).hexdigest()}"/>'
+        dat = f'<?xml version="1.0"?><datafile><header><name>T (Parent-Clone)</name><version>20260101-000000</version></header><game name="Dup (Japan)"><description>D</description>{rom}{rom}</game></datafile>'
+        with self.db.c: ds = self.db.import_dat(dat.encode(), 't.dat', 'auto'); self.db.scan(ds)
+        self.db.c.close()
+        out = self.root / 'exp'
+        for container in ('rom', 'torrentzip'):
+            r = subprocess.run([sys.executable, '-B', str(TOOLS / 'export_set.py'), str(self.path), str(out / container), '--set', 'all', '--container', container, '--engine-file', engine.__file__], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr[-500:] + r.stdout[-500:])
+            m = json.loads((out / container / 'export-manifest.json').read_text())
+            self.assertEqual((m['exported'], len(m['errors']), m['duplicate_members'][0]['exported']), (1, 0, 1))
+        self.db = engine.DB(self.path)
 
 
 class NesMigrationTests(unittest.TestCase):

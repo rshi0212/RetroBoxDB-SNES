@@ -22,12 +22,16 @@ sys.path.insert(0, str(TOOLS))
 import build_db as B  # noqa: E402
 RA_ROOT = pathlib.Path('/mnt/MyShare/RetroAchievements')
 # RetroAchievements-curated ROM sets (hashes as RA lists them; includes hacks, translations and homebrew outside No-Intro).
-RA_FOLDERS = {'nes': 'RA - Nintendo Entertainment System', 'snes': 'RA - Super Nintendo Entertainment System', 'megadrive': 'RA - Sega Genesis',
-              'gb': 'RA - Nintendo Game Boy', 'gbc': 'RA - Nintendo Game Boy Color', 'gba': 'RA - Nintendo Game Boy Advance',
-              'fds': 'RA - Nintendo Entertainment System'}  # the RA NES set also holds the FDS disk images
-# Files of another platform found in a mixed folder are skipped and listed in the report: Famicom Disk System images
-# belong to the FDS database, not NES; Satellaview (BS-X) .bs files are their own platform, not SNES.
-OTHER_PLATFORM_EXT = {'nes': {'.fds', '.qd'}, 'fds': {'.nes', '.unf', '.unif', '.nsf'}, 'snes': {'.bs'}}
+RA_FOLDERS = {'nes': ('RA - Nintendo Entertainment System',), 'snes': ('RA - Super Nintendo Entertainment System',), 'megadrive': ('RA - Sega Genesis',),
+              'gb': ('RA - Nintendo Game Boy',), 'gbc': ('RA - Nintendo Game Boy Color',), 'gba': ('RA - Nintendo Game Boy Advance',),
+              # FDS images are in the RA FDS set and also in the RA NES set; Satellaview .bs files are in the RA SNES set.
+              'fds': ('RA - Nintendo Famicom Disk System', 'RA - Nintendo Entertainment System'),
+              'satellaview': ('RA - Super Nintendo Entertainment System',)}
+# Files of another platform found in a folder outside this platform's No-Intro set are skipped and listed in the
+# report: FDS images belong to the FDS database, not NES; Satellaview (BS-X) .bs files to the Satellaview database,
+# not SNES; cartridge files (.nes, .sfc ...) in an RA FDS or SNES folder belong to NES or SNES.
+OTHER_PLATFORM_EXT = {'nes': {'.fds', '.qd'}, 'fds': {'.nes', '.unf', '.unif', '.nsf'}, 'snes': {'.bs'},
+                      'satellaview': {'.sfc', '.smc', '.swc', '.fig'}}
 
 
 def log(*a): print(time.strftime('%H:%M:%S'), *a, flush=True)
@@ -168,7 +172,7 @@ def main():
         if unpaired: report['unpaired_nointro_files'] = unpaired; log('DB Export/Dump Log without a same-timestamp partner (skipped):', unpaired)
         args.nointro += [[dbx[k], logs[k]] for k in sorted(set(dbx) & set(logs))]
         args.roms += sorted(p for p in B.NOINTRO.iterdir() if p.is_dir() and (p.name == cfg['nointro'] or p.name.startswith(cfg['nointro'] + ' (')))
-        if (RA_ROOT / RA_FOLDERS[plat]).is_dir(): args.roms.append(RA_ROOT / RA_FOLDERS[plat])
+        args.roms += [RA_ROOT / f for f in RA_FOLDERS.get(plat, ()) if (RA_ROOT / f).is_dir()]
 
     # DATs
     # Each DAT format (NES headered/headerless, FDS/QD, or the single Parent-Clone DAT) is diffed against its own previous
@@ -209,7 +213,8 @@ def main():
     for i, p in enumerate(paths):
         if zip_unchanged(db, p): skipped += 1; continue
         with zipfile.ZipFile(p) as z: infos = [x for x in z.infolist() if not x.is_dir()]
-        foreign = sorted({pathlib.PurePosixPath(x.filename).suffix.lower() for x in infos} & OTHER_PLATFORM_EXT.get(plat, set()))
+        own = p.parent.name == cfg['nointro'] or p.parent.name.startswith(cfg['nointro'] + ' (')
+        foreign = [] if own else sorted({pathlib.PurePosixPath(x.filename).suffix.lower() for x in infos} & OTHER_PLATFORM_EXT.get(plat, set()))
         if foreign: other_platform.append({'path': str(p), 'extensions': foreign}); continue
         raw = p.read_bytes(); keys = [index.get((f'{x.CRC:08x}', x.file_size)) for x in infos]
         fam = next((k for k in keys if k), None)  # otherwise assigned after import (shared blocks, then title)

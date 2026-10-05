@@ -172,6 +172,20 @@ CREATE VIEW v_fds_headers AS
  SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.image_format,h.fwnes_header,h.sides,h.valid_sides,h.manufacturer_code,
  h.game_code,h.game_type,h.revision,h.disk_type,h.manufacturing_date,h.country_code,h.trailing_bytes
  FROM roms r JOIN objects o ON o.id=r.object_id JOIN fds_hardware h ON h.rom_id=r.id;
+-- Satellaview (BS-X) memory-pack header at 0x7FB0 (LoROM) or 0xFFB0 (HiROM); the base cartridge uses snes_hardware.
+CREATE TABLE bsx_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ header_offset INTEGER NOT NULL,mapping TEXT NOT NULL CHECK(mapping IN ('lorom','hirom')),maker_code TEXT,program_type TEXT NOT NULL,
+ title TEXT,title_hex TEXT NOT NULL,block_allocation TEXT NOT NULL,limited_starts INTEGER NOT NULL,broadcast_month INTEGER,broadcast_day INTEGER,
+ map_mode INTEGER NOT NULL,execution_type INTEGER NOT NULL,version INTEGER NOT NULL,checksum_declared INTEGER NOT NULL,
+ checksum_complement INTEGER NOT NULL,checksum_pair_valid INTEGER NOT NULL,raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+CREATE TRIGGER immutable_bsx_hardware_update BEFORE UPDATE ON bsx_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_bsx_hardware_delete BEFORE DELETE ON bsx_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE VIEW v_bsx_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.mapping,h.maker_code,h.title,h.broadcast_month,h.broadcast_day,
+ h.limited_starts,h.map_mode,h.version,h.checksum_pair_valid
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN bsx_hardware h ON h.rom_id=r.id;
 -- DAT diff joins (old/new entry -> release linkage) need both directions indexed.
 CREATE INDEX dat_change_old ON dat_changes(old_dat_rom_id);
 CREATE INDEX dat_change_new ON dat_changes(new_dat_rom_id);

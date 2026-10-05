@@ -122,7 +122,7 @@ def main():
         return None
     report = {'database': pathlib.Path(a.db).name, 'platform': platform, 'dat': {'version': ds['version'], 'mode': ds['mode'], 'name': ds['name']},
               'criteria': {k: getattr(a, k) for k in ('set', 'region_priority', 'ra', 'ra_category', 'include', 'exclude', 'container', 'layout')},
-              'generated_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'selected': len(pool), 'exported': 0, 'missing': [], 'errors': [], 'files': []}
+              'generated_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'selected': len(pool), 'exported': 0, 'missing': [], 'duplicate_members': [], 'errors': [], 'files': []}
     if not a.report_only: a.out.mkdir(parents=True, exist_ok=True)
     selection = []
     for g in pool:
@@ -132,7 +132,11 @@ def main():
             if v is None: missing.append(t['name'])
             else: members.append((t, v[0]))
         if missing: report['missing'].append({'game': g['name'], 'members': missing}); continue
-        selection.append((g, members))
+        # A DAT may list the same member twice (same name and checksums); it is exported once.
+        uniq = {}
+        for t, oid in members: uniq.setdefault((t['name'].casefold(), oid), (t, oid))
+        if len(uniq) < len(members): report['duplicate_members'].append({'game': g['name'], 'listed': len(members), 'exported': len(uniq)})
+        selection.append((g, list(uniq.values())))
     if a.report_only: selection = []
     # Export in storage order so each solid group is decoded once, front to back, instead of once per name-ordered jump.
     pos = db.storage_positions() if hasattr(db, 'storage_positions') else {}

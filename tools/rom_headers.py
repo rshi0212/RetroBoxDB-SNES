@@ -349,4 +349,40 @@ def fds_cuts(data):
     return {head} | set(range(head, len(data), side)) if head else set(range(0, len(data), side))
 
 
-PARSERS = {'snes': parse_snes, 'megadrive': parse_md, 'gb': parse_gb, 'gbc': parse_gb, 'gba': parse_gba, 'fds': parse_fds}
+# ---------------------------------------------------------------- Satellaview (BS-X)
+
+BSX_BASES = (0x7FB0, 0xFFB0)  # LoROM / HiROM header area of a BS memory-pack file
+
+
+def _bsx_score(data, base):
+    h = data[base:base + 0x30]
+    if len(h) < 0x30 or h[0x2A] != 0x33: return -1, h
+    score = 2 + (h[0x28] in (0x20, 0x21, 0x30, 0x31)) * 2 + ((int.from_bytes(h[0x2C:0x2E], 'little') ^ int.from_bytes(h[0x2E:0x30], 'little')) == 0xFFFF)
+    return score, h
+
+
+def parse_bsx(data):
+    """BS-X memory-pack header at 0x7FB0 / 0xFFB0 (Satellaview). A standard SNES header (the BS-X base cartridge) is
+    parsed by parse_snes and stored in snes_hardware. Descriptive only."""
+    out = dict(format='bs', parse_status='unclassified', components=[('file', 0, len(data))] if data else [], hardware=None, warnings=[])
+    if len(data) >= 0x8000 and data[0x7FDA] == 0x33 and data[0x7FD5] in (0x20, 0x21, 0x23, 0x30, 0x31, 0x32, 0x35) and data[0x7FD8] not in (0x20, 0x21, 0x30, 0x31):
+        p = parse_snes(data); p['format'] = 'snes_cartridge'; p['table'] = 'snes_hardware'; return p
+    scored = [(*_bsx_score(data, b), b) for b in BSX_BASES]
+    score, h, base = max(scored, key=lambda x: x[0])
+    if score < 4:
+        out['warnings'].append('no BS-X header found (data pack or unheadered file)'); return out
+    month, day = h[0x26] >> 4, h[0x27] >> 3
+    declared = int.from_bytes(h[0x2E:0x30], 'little'); complement = int.from_bytes(h[0x2C:0x2E], 'little')
+    hw = dict(header_offset=base, mapping='lorom' if base == 0x7FB0 else 'hirom', maker_code=_text(h[0:2]), program_type=h[2:6].hex(), title=_text(h[0x10:0x20]),
+              title_hex=h[0x10:0x20].hex(), block_allocation=h[0x20:0x24].hex(), limited_starts=int.from_bytes(h[0x24:0x26], 'little'),
+              broadcast_month=month if 1 <= month <= 12 else None, broadcast_day=day if 1 <= day <= 31 else None, map_mode=h[0x28], execution_type=h[0x29],
+              version=h[0x2B], checksum_declared=declared, checksum_complement=complement, checksum_pair_valid=int((declared ^ complement) == 0xFFFF),
+              raw_json=_js({'parser': PARSER_VERSION, 'header_hex': h.hex(), 'interpretation': 'BS-X memory-pack header declaration; broadcast history and pack hardware require external evidence'}))
+    out.update(hardware=hw, parse_status='valid')
+    if not hw['checksum_pair_valid']: out['warnings'].append('checksum and complement do not pair')
+    if hw['broadcast_month'] is None or hw['broadcast_day'] is None: out['warnings'].append('broadcast date field outside calendar range')
+    if out['warnings']: out['parse_status'] = 'warning'
+    return out
+
+
+PARSERS = {'snes': parse_snes, 'megadrive': parse_md, 'gb': parse_gb, 'gbc': parse_gb, 'gba': parse_gba, 'fds': parse_fds, 'satellaview': parse_bsx}

@@ -43,6 +43,8 @@ PLATFORM_ADAPTERS = {
             'table': 'gb_hardware', 'rom_ext': ('.gbc', '.gb', '.cgb', '.bin', '.rom')},
     'gba': {'name': 'Nintendo Game Boy Advance', 'parser': parse_gba, 'cuts': lambda data: set(),
             'table': 'gba_hardware', 'rom_ext': ('.gba', '.agb', '.gbc', '.gb', '.bin', '.srl', '.mb')},
+    'satellaview': {'name': 'Nintendo Satellaview', 'parser': parse_bsx, 'cuts': lambda data: set(),
+                    'table': 'bsx_hardware', 'rom_ext': ('.bs', '.sfc', '.bin')},
     'fds': {'name': 'Nintendo Family Computer Disk System', 'parser': parse_fds, 'cuts': fds_cuts,
             'table': 'fds_hardware', 'rom_ext': ('.fds', '.qd', '.bin'), 'header_len': lambda d: 16 if d[:4] == b'FDS\x1a' else 0},
 }
@@ -69,7 +71,7 @@ def ra_hash(platform, data):
         return hashlib.md5(data[16:]).hexdigest(), 'md5 after the 16-byte NES header (rcheevos nes)'
     if platform == 'fds' and data[:4] == b'FDS\x1a':
         return hashlib.md5(data[16:]).hexdigest(), 'md5 after the 16-byte fwNES header (rcheevos fds)'
-    if platform == 'snes' and len(data) % 0x2000 == 512:
+    if platform in ('snes', 'satellaview') and len(data) % 0x2000 == 512:  # rcheevos hashes BS-X files with the SNES method
         return hashlib.md5(data[512:]).hexdigest(), 'md5 after 512-byte copier header (rcheevos snes)'
     return hashlib.md5(data).hexdigest(), 'md5 of complete file (rcheevos buffer)'
 
@@ -138,7 +140,7 @@ class DB(_V3DB):
         self._recent = collections.OrderedDict()  # object id -> bytes just imported (archive plans of the same ZIP)
         setting = self.c.execute("SELECT value FROM meta WHERE key='nes_block_size'").fetchone()
         self._rom_block = int(setting[0]) if setting else ROM_BLOCK
-        if self._rom_block not in (4096, 8192, 16384, 65536, 262144, 1048576): raise ValueError('Unsupported ROM block size')
+        if self._rom_block not in tuple(1 << n for n in range(12, 21)): raise ValueError('Unsupported ROM block size')
         meta = dict(self.c.execute("SELECT key,value FROM meta WHERE key IN ('solid_group_max_bytes','solid_group_dictionary_bytes')").fetchall())
         self.solid_limit = min(int(meta.get('solid_group_max_bytes', SOLID_LIMIT)), SOLID_MAX)
         self.solid_dict = min(int(meta.get('solid_group_dictionary_bytes', SOLID_LIMIT)), SOLID_MAX)
@@ -501,7 +503,7 @@ class DB(_V3DB):
                           warnings_json=js(p['warnings']))
         for i, (kind, off, size) in enumerate(p['components']):
             self.insert('rom_components', rom_id=rid, ordinal=i, kind=kind, offset=off, size=size, sha256=hashlib.sha256(data[off:off + size]).hexdigest())
-        if p['hardware']: self.insert(self.adapter['table'], rom_id=rid, **p['hardware'])
+        if p['hardware']: self.insert(p.get('table', self.adapter['table']), rom_id=rid, **p['hardware'])  # a parser may name another table (BS-X base cartridge)
         if mode != 'auxiliary':
             md5, method = ra_hash(self.platform, data)
             self.insert('rom_ra_hashes', rom_id=rid, ra_md5=md5, method=method)

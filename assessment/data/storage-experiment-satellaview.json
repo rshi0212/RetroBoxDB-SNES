@@ -1,0 +1,135 @@
+{
+ "sources": {
+  "Nintendo - Satellaview": 698,
+  "Nintendo - Satellaview (Aftermarket)": 1,
+  "RA - Super Nintendo Entertainment System": 40
+ },
+ "dat": "Nintendo - Satellaview (Parent-Clone) (20260919-025009).zip",
+ "families": 581,
+ "files": 739,
+ "zip_MiB": 324.15,
+ "raw_MiB": 703.62,
+ "unique_files_MiB": 585.88,
+ "rows": [
+  {
+   "config": "B16K_C32M",
+   "MiB": 107.818,
+   "unique_MiB": 255.78,
+   "groups": 8,
+   "blocks": 16370,
+   "block_refs": 45032,
+   "meta_MiB_est": 3.123,
+   "s": 36.3,
+   "total_MiB": 110.941
+  },
+  {
+   "config": "B16K_C64M",
+   "MiB": 106.399,
+   "unique_MiB": 255.78,
+   "groups": 4,
+   "blocks": 16370,
+   "block_refs": 45032,
+   "meta_MiB_est": 3.123,
+   "s": 41.7,
+   "total_MiB": 109.522
+  },
+  {
+   "config": "B16K_C128M",
+   "MiB": 104.119,
+   "unique_MiB": 255.78,
+   "groups": 2,
+   "blocks": 16370,
+   "block_refs": 45032,
+   "meta_MiB_est": 3.123,
+   "s": 82.7,
+   "total_MiB": 107.242
+  },
+  {
+   "config": "B16K_C256M",
+   "MiB": 100.812,
+   "unique_MiB": 255.78,
+   "groups": 1,
+   "blocks": 16370,
+   "block_refs": 45032,
+   "meta_MiB_est": 3.123,
+   "s": 168.9,
+   "total_MiB": 103.935
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 111.707,
+   "unique_MiB": 309.69,
+   "groups": 10,
+   "blocks": 4955,
+   "block_refs": 11258,
+   "meta_MiB_est": 0.855,
+   "s": 43.7,
+   "total_MiB": 112.562
+  },
+  {
+   "config": "B64K_C64M",
+   "MiB": 109.884,
+   "unique_MiB": 309.69,
+   "groups": 5,
+   "blocks": 4955,
+   "block_refs": 11258,
+   "meta_MiB_est": 0.855,
+   "s": 57.2,
+   "total_MiB": 110.739
+  },
+  {
+   "config": "B64K_C128M",
+   "MiB": 107.93,
+   "unique_MiB": 309.69,
+   "groups": 3,
+   "blocks": 4955,
+   "block_refs": 11258,
+   "meta_MiB_est": 0.855,
+   "s": 73.6,
+   "total_MiB": 108.785
+  },
+  {
+   "config": "B64K_C256M",
+   "MiB": 103.76,
+   "unique_MiB": 309.69,
+   "groups": 2,
+   "blocks": 4955,
+   "block_refs": 11258,
+   "meta_MiB_est": 0.855,
+   "s": 148.5,
+   "total_MiB": 104.615
+  },
+  {
+   "config": "B8K_C256M",
+   "MiB": 100.786,
+   "unique_MiB": 240.31,
+   "groups": 1,
+   "blocks": 30760,
+   "block_refs": 90064,
+   "meta_MiB_est": 6.076,
+   "s": 166.8,
+   "total_MiB": 106.862
+  },
+  {
+   "config": "B32K_C256M",
+   "MiB": 102.154,
+   "unique_MiB": 278.78,
+   "groups": 2,
+   "blocks": 8921,
+   "block_refs": 22516,
+   "meta_MiB_est": 1.625,
+   "s": 168.1,
+   "total_MiB": 103.779
+  }
+ ],
+ "per_file_lzma_MiB": 240.46,
+ "seconds": 730,
+ "method": "Whole local collection (no sample): No-Intro Satellaview folders plus the .bs files of the RA SNES folder; family order from the newest Parent-Clone DAT; total_MiB = compressed groups + block metadata estimate (90 bytes per block, 40 per reference).",
+ "decision_en": "32 KiB blocks and 256 MiB groups: 103.779 MiB in total against 324.15 MiB of ZIPs and 240.46 MiB with per-file LZMA. Block deduplication removes most of the data (BS memory packs share padding and repeated broadcasts): 703.62 MiB of files become 278.78 MiB of unique 32 KiB blocks. At 256 MiB groups 8, 16, 32 and 64 KiB blocks give 106.862, 103.935, 103.779 and 104.615 MiB; with 16 KiB blocks 128 MiB groups are 3.18% larger than 256 MiB groups, so the 256 MiB ceiling is used.",
+ "decision_zh": "32 KiB 块、256 MiB 组：合计 103.779 MiB，原 ZIP 324.15 MiB，逐文件 LZMA 240.46 MiB。块级去重去掉了大部分数据（BS 记忆卡之间共用填充和重复广播内容）：703.62 MiB 的文件按 32 KiB 去重后为 278.78 MiB。256 MiB 组下 8／16／32／64 KiB 块分别为 106.862／103.935／103.779／104.615 MiB；16 KiB 块时 128 MiB 组比 256 MiB 组大 3.18%，因此取 256 MiB 上限。",
+ "chosen": {
+  "block": 32768,
+  "group_cap": 268435456,
+  "config": "B32K_C256M"
+ }
+}
