@@ -222,7 +222,9 @@ CREATE TRIGGER immutable_pokemini_hardware_update BEFORE UPDATE ON pokemini_hard
 CREATE TRIGGER immutable_pokemini_hardware_delete BEFORE DELETE ON pokemini_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
 CREATE VIEW v_sms_headers AS
  SELECT r.id AS rom_id,o.sha1,o.size,r.parse_status,printf('%04X',h.header_offset) AS header_offset,h.region,h.size_declared,h.product_code,h.version,
- printf('%04X',h.checksum_declared) AS checksum_declared,printf('%04X',h.checksum_computed) AS checksum_computed,h.checksum_valid,h.codemasters,h.sdsc,h.sdsc_title
+ printf('%04X',h.checksum_declared) AS checksum_declared,printf('%04X',h.checksum_computed) AS checksum_computed,h.checksum_valid,
+ CASE WHEN h.checksum_valid IS NULL THEN NULL WHEN h.checksum_valid THEN 'valid' WHEN h.checksum_declared=0 THEN 'not_declared' ELSE 'mismatch' END AS checksum_status,
+ h.codemasters,h.sdsc,h.sdsc_title
  FROM roms r JOIN objects o ON o.id=r.object_id JOIN sms_hardware h ON h.rom_id=r.id;
 CREATE VIEW v_ws_headers AS
  SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.publisher_id,h.color,h.game_id,h.version,h.rom_size_declared,h.save_type,h.save_size,
@@ -235,6 +237,46 @@ CREATE VIEW v_ngp_headers AS
 CREATE VIEW v_pokemini_headers AS
  SELECT r.id AS rom_id,o.sha1,o.size,r.parse_status,h.nintendo,h.game_code,h.region_code,h.title,h.two_player
  FROM roms r JOIN objects o ON o.id=r.object_id JOIN pokemini_hardware h ON h.rom_id=r.id;
+-- NEC PC Engine / TurboGrafx-16 / SuperGrafx HuCards (no internal header): image facts only.
+CREATE TABLE pce_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ copier_header INTEGER NOT NULL,rom_size INTEGER NOT NULL,banks INTEGER NOT NULL,partial_bank_bytes INTEGER NOT NULL,reset_vector INTEGER,
+ raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+-- Microsoft MSX / MSX2: cartridge 'AB' header, disk and tape images (media); the machine generation is not in the data.
+CREATE TABLE msx_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ media TEXT NOT NULL CHECK(media IN ('cartridge','disk','tape')),header_offset INTEGER,init INTEGER,statement INTEGER,device INTEGER,text INTEGER,
+ raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+-- Nintendo Virtual Boy game header (0x220 bytes before the end of the image).
+CREATE TABLE vb_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ title TEXT,title_hex TEXT NOT NULL,maker_code TEXT,game_code TEXT,version INTEGER NOT NULL,raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+CREATE TRIGGER immutable_pce_hardware_update BEFORE UPDATE ON pce_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_pce_hardware_delete BEFORE DELETE ON pce_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_msx_hardware_update BEFORE UPDATE ON msx_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_msx_hardware_delete BEFORE DELETE ON msx_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_vb_hardware_update BEFORE UPDATE ON vb_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_vb_hardware_delete BEFORE DELETE ON vb_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE VIEW v_pce_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.copier_header,h.rom_size,h.banks,h.partial_bank_bytes,printf('%04X',h.reset_vector) AS reset_vector
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN pce_hardware h ON h.rom_id=r.id;
+CREATE VIEW v_msx_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.media,printf('%04X',h.header_offset) AS header_offset,printf('%04X',h.init) AS init,
+ printf('%04X',h.statement) AS statement,printf('%04X',h.device) AS device,printf('%04X',h.text) AS text,
+ (SELECT a.value FROM rom_annotations a WHERE a.rom_id=r.id AND a.kind='platform') AS platform_evidence
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN msx_hardware h ON h.rom_id=r.id;
+CREATE VIEW v_vb_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.parse_status,h.title,h.maker_code,h.game_code,h.version
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN vb_hardware h ON h.rom_id=r.id;
+-- Evidence about a ROM that is not in its bytes, e.g. why a file of a shared RetroAchievements folder belongs to this
+-- platform (kind 'platform': value 'dat', 'tag', 'title', 'blocks', 'curated:<basis>' or 'default' = unconfirmed).
+CREATE TABLE rom_annotations(
+ rom_id INTEGER NOT NULL REFERENCES roms(id),kind TEXT NOT NULL,value TEXT NOT NULL,source TEXT,created_at TEXT NOT NULL,
+ PRIMARY KEY(rom_id,kind)
+) STRICT, WITHOUT ROWID;
 -- DAT diff joins (old/new entry -> release linkage) need both directions indexed.
 CREATE INDEX dat_change_old ON dat_changes(old_dat_rom_id);
 CREATE INDEX dat_change_new ON dat_changes(new_dat_rom_id);

@@ -85,6 +85,9 @@ def import_snapshot(db, dbpath, logpath, progress=lambda text: None):
     platform = c.execute('SELECT code,name FROM platforms WHERE id=1').fetchone()
     name, raw, zipraw = read_input(dbpath); lname, lraw, lzipraw = read_input(logpath)
     parsed = parse_export(raw); logs = list(parse_log(lraw)); dh = hashes(raw); lh = hashes(lraw)
+    if parsed['version'] == 'unknown':  # some DB Exports carry no header version: use the DAT-o-MATIC file name stamp
+        m = re.search(r'\((\d{8}-\d{6})\)', pathlib.Path(dbpath).name)
+        if m: parsed['version'] = m[1]
     for row in logs:
         r = row['fields']; a = parsed['archives'].get(r['ID'])
         if not a or a['title'] != r['Name']: raise ValueError('Dumplog/DB archive identity mismatch: ' + r['ID'])

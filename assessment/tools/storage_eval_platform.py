@@ -20,7 +20,7 @@ def lz(data, d):
     return len(lzma.compress(data, format=lzma.FORMAT_RAW, filters=f))
 
 
-def collect(prefix, exts, extra):
+def collect(prefix, exts, extra, route=None):
     dat = sorted(DATS.glob(f'{prefix} (Parent-Clone) (*).zip'), key=stamp)[-1]
     z = zipfile.ZipFile(dat); root = ET.fromstring(z.read(z.namelist()[0]))
     parent = {g.get('name'): (g.get('cloneof') or g.get('name')) for g in root.findall('game')}
@@ -30,7 +30,10 @@ def collect(prefix, exts, extra):
         for p in sorted(d.glob('*.zip')):
             with zipfile.ZipFile(p) as zz:
                 members = [(i.filename, zz.read(i)) for i in zz.infolist() if not i.is_dir()]
-            if d in extra: members = [m for m in members if pathlib.PurePosixPath(m[0]).suffix.lower() in exts]  # this platform's files only
+            if d in extra:
+                if route:  # shared folder split by platform (tools/msx_route.py), not by extension
+                    if msx_route.route(p.name, members)[0] != route: continue
+                else: members = [m for m in members if pathlib.PurePosixPath(m[0]).suffix.lower() in exts]  # this platform's files only
             if not members: continue
             zipbytes += p.stat().st_size; srcs[d.name] += 1
             fam[parent.get(p.stem) or '~' + re.sub(r'\s*\(.*$', '', p.stem).lower()] += members
@@ -55,9 +58,11 @@ def plan(fam, B, C):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--prefix', required=True); ap.add_argument('--ext', nargs='+', required=True)
     ap.add_argument('--extra', nargs='*', default=[]); ap.add_argument('--blocks', default='8,16,32,64'); ap.add_argument('--caps', default='32,64,128,256')
-    ap.add_argument('--memory-gib', type=int, default=6)
+    ap.add_argument('--memory-gib', type=int, default=6); ap.add_argument('--route', help='platform code: keep only extra-folder ZIPs routed to it (MSX)')
     a = ap.parse_args(); t0 = time.time()
-    fam, zipbytes, srcs, dat = collect(a.prefix, {e.lower() for e in a.ext}, [pathlib.Path(x) for x in a.extra])
+    if a.route:
+        import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / 'tools')); import msx_route; msx_route.prime_blocks(); globals()['msx_route'] = msx_route
+    fam, zipbytes, srcs, dat = collect(a.prefix, {e.lower() for e in a.ext}, [pathlib.Path(x) for x in a.extra], a.route)
     files = [d for v in fam.values() for _, d in v]; uniq = list({hashlib.sha256(d).digest(): d for d in files}.values())
     out = {'prefix': a.prefix, 'sources': srcs, 'dat': dat, 'families': len(fam), 'files': len(files), 'zip_MiB': round(zipbytes / 2**20, 2),
            'raw_MiB': round(sum(map(len, files)) / 2**20, 2), 'unique_files_MiB': round(sum(map(len, uniq)) / 2**20, 2), 'rows': [],

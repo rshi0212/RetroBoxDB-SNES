@@ -1,0 +1,176 @@
+{
+ "prefix": "Microsoft - MSX",
+ "sources": {
+  "Microsoft - MSX": 952,
+  "Microsoft - MSX (Aftermarket)": 7,
+  "RA - Microsoft MSX": 111
+ },
+ "dat": "Microsoft - MSX (Parent-Clone) (20260618-055428).zip",
+ "families": 671,
+ "files": 1070,
+ "zip_MiB": 24.38,
+ "raw_MiB": 50.3,
+ "unique_files_MiB": 47.03,
+ "rows": [
+  {
+   "config": "B8K_C32M",
+   "MiB": 12.337,
+   "unique_MiB": 33.11,
+   "groups": 2,
+   "blocks": 4240,
+   "block_refs": 6442,
+   "meta_MiB_est": 0.61,
+   "s": 16.2,
+   "total_MiB": 12.947
+  },
+  {
+   "config": "B8K_C64M",
+   "MiB": 12.323,
+   "unique_MiB": 33.11,
+   "groups": 1,
+   "blocks": 4240,
+   "block_refs": 6442,
+   "meta_MiB_est": 0.61,
+   "s": 16.0,
+   "total_MiB": 12.933
+  },
+  {
+   "config": "B16K_C32M",
+   "MiB": 12.545,
+   "unique_MiB": 36.51,
+   "groups": 2,
+   "blocks": 2372,
+   "block_refs": 3258,
+   "meta_MiB_est": 0.328,
+   "s": 12.2,
+   "total_MiB": 12.873
+  },
+  {
+   "config": "B16K_C64M",
+   "MiB": 12.332,
+   "unique_MiB": 36.51,
+   "groups": 1,
+   "blocks": 2372,
+   "block_refs": 3258,
+   "meta_MiB_est": 0.328,
+   "s": 14.8,
+   "total_MiB": 12.66
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 12.643,
+   "unique_MiB": 39.31,
+   "groups": 2,
+   "blocks": 1527,
+   "block_refs": 1898,
+   "meta_MiB_est": 0.203,
+   "s": 13.6,
+   "total_MiB": 12.846
+  },
+  {
+   "config": "B32K_C64M",
+   "MiB": 12.338,
+   "unique_MiB": 39.31,
+   "groups": 1,
+   "blocks": 1527,
+   "block_refs": 1898,
+   "meta_MiB_est": 0.203,
+   "s": 16.4,
+   "total_MiB": 12.541
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 12.752,
+   "unique_MiB": 40.78,
+   "groups": 2,
+   "blocks": 1213,
+   "block_refs": 1397,
+   "meta_MiB_est": 0.157,
+   "s": 13.1,
+   "total_MiB": 12.909
+  },
+  {
+   "config": "B64K_C64M",
+   "MiB": 12.34,
+   "unique_MiB": 40.78,
+   "groups": 1,
+   "blocks": 1213,
+   "block_refs": 1397,
+   "meta_MiB_est": 0.157,
+   "s": 16.7,
+   "total_MiB": 12.497
+  },
+  {
+   "config": "B128K_C32M",
+   "MiB": 12.884,
+   "unique_MiB": 42.84,
+   "groups": 2,
+   "blocks": 1066,
+   "block_refs": 1166,
+   "meta_MiB_est": 0.136,
+   "s": 12.7,
+   "total_MiB": 13.02
+  },
+  {
+   "config": "B128K_C64M",
+   "MiB": 12.342,
+   "unique_MiB": 42.84,
+   "groups": 1,
+   "blocks": 1066,
+   "block_refs": 1166,
+   "meta_MiB_est": 0.136,
+   "s": 16.3,
+   "total_MiB": 12.478
+  },
+  {
+   "config": "B256K_C32M",
+   "MiB": 12.852,
+   "unique_MiB": 44.72,
+   "groups": 2,
+   "blocks": 1028,
+   "block_refs": 1101,
+   "meta_MiB_est": 0.13,
+   "s": 12.7,
+   "total_MiB": 12.982
+  },
+  {
+   "config": "B256K_C64M",
+   "MiB": 12.343,
+   "unique_MiB": 44.72,
+   "groups": 1,
+   "blocks": 1028,
+   "block_refs": 1101,
+   "meta_MiB_est": 0.13,
+   "s": 17.1,
+   "total_MiB": 12.473
+  },
+  {
+   "config": "B512K_C32M",
+   "MiB": 12.872,
+   "unique_MiB": 46.22,
+   "groups": 2,
+   "blocks": 1015,
+   "block_refs": 1081,
+   "meta_MiB_est": 0.128,
+   "s": 12.8,
+   "total_MiB": 13.0
+  },
+  {
+   "config": "B512K_C64M",
+   "MiB": 12.343,
+   "unique_MiB": 46.22,
+   "groups": 1,
+   "blocks": 1015,
+   "block_refs": 1081,
+   "meta_MiB_est": 0.128,
+   "s": 18.2,
+   "total_MiB": 12.471
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 20.15,
+ "best": "B512K_C64M",
+ "seconds": 215,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B64K_C64M"
+}

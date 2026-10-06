@@ -1,0 +1,64 @@
+{
+ "prefix": "Nintendo - Game & Watch",
+ "sources": {
+  "Nintendo - Game & Watch": 54
+ },
+ "dat": "Nintendo - Game & Watch (Parent-Clone) (20260512-134245).zip",
+ "families": 52,
+ "files": 54,
+ "zip_MiB": 0.15,
+ "raw_MiB": 0.17,
+ "unique_files_MiB": 0.17,
+ "rows": [
+  {
+   "config": "B1K_C32M",
+   "MiB": 0.123,
+   "unique_MiB": 0.17,
+   "groups": 1,
+   "blocks": 180,
+   "block_refs": 182,
+   "meta_MiB_est": 0.022,
+   "s": 0.1,
+   "total_MiB": 0.145
+  },
+  {
+   "config": "B2K_C32M",
+   "MiB": 0.123,
+   "unique_MiB": 0.17,
+   "groups": 1,
+   "blocks": 90,
+   "block_refs": 91,
+   "meta_MiB_est": 0.011,
+   "s": 0.1,
+   "total_MiB": 0.134
+  },
+  {
+   "config": "B4K_C32M",
+   "MiB": 0.123,
+   "unique_MiB": 0.17,
+   "groups": 1,
+   "blocks": 53,
+   "block_refs": 54,
+   "meta_MiB_est": 0.007,
+   "s": 0.1,
+   "total_MiB": 0.13
+  },
+  {
+   "config": "B8K_C32M",
+   "MiB": 0.123,
+   "unique_MiB": 0.17,
+   "groups": 1,
+   "blocks": 53,
+   "block_refs": 54,
+   "meta_MiB_est": 0.007,
+   "s": 0.1,
+   "total_MiB": 0.13
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 0.14,
+ "best": "B4K_C32M",
+ "seconds": 1,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B4K_C32M"
+}

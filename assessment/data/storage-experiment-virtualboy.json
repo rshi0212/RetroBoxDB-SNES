@@ -1,0 +1,232 @@
+{
+ "prefix": "Nintendo - Virtual Boy",
+ "sources": {
+  "Nintendo - Virtual Boy": 81,
+  "Nintendo - Virtual Boy (Aftermarket)": 45,
+  "Nintendo - Virtual Boy (Private)": 1,
+  "RA - Nintendo Virtual Boy": 49
+ },
+ "dat": "Nintendo - Virtual Boy (Parent-Clone) (20260805-170231).zip",
+ "families": 80,
+ "files": 176,
+ "zip_MiB": 76.45,
+ "raw_MiB": 315.12,
+ "unique_files_MiB": 167.94,
+ "rows": [
+  {
+   "config": "B16K_C32M",
+   "MiB": 22.335,
+   "unique_MiB": 104.98,
+   "groups": 4,
+   "blocks": 6719,
+   "block_refs": 20168,
+   "meta_MiB_est": 1.346,
+   "s": 22.9,
+   "total_MiB": 23.681
+  },
+  {
+   "config": "B16K_C64M",
+   "MiB": 21.929,
+   "unique_MiB": 104.98,
+   "groups": 2,
+   "blocks": 6719,
+   "block_refs": 20168,
+   "meta_MiB_est": 1.346,
+   "s": 38.4,
+   "total_MiB": 23.275
+  },
+  {
+   "config": "B16K_C128M",
+   "MiB": 21.769,
+   "unique_MiB": 104.98,
+   "groups": 1,
+   "blocks": 6719,
+   "block_refs": 20168,
+   "meta_MiB_est": 1.346,
+   "s": 55.8,
+   "total_MiB": 23.115
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 22.787,
+   "unique_MiB": 107.38,
+   "groups": 4,
+   "blocks": 3436,
+   "block_refs": 10084,
+   "meta_MiB_est": 0.68,
+   "s": 22.7,
+   "total_MiB": 23.467
+  },
+  {
+   "config": "B32K_C64M",
+   "MiB": 22.318,
+   "unique_MiB": 107.38,
+   "groups": 2,
+   "blocks": 3436,
+   "block_refs": 10084,
+   "meta_MiB_est": 0.68,
+   "s": 38.1,
+   "total_MiB": 22.998
+  },
+  {
+   "config": "B32K_C128M",
+   "MiB": 21.773,
+   "unique_MiB": 107.38,
+   "groups": 1,
+   "blocks": 3436,
+   "block_refs": 10084,
+   "meta_MiB_est": 0.68,
+   "s": 55.9,
+   "total_MiB": 22.453
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 23.363,
+   "unique_MiB": 111.25,
+   "groups": 4,
+   "blocks": 1780,
+   "block_refs": 5042,
+   "meta_MiB_est": 0.345,
+   "s": 23.0,
+   "total_MiB": 23.708
+  },
+  {
+   "config": "B64K_C64M",
+   "MiB": 22.721,
+   "unique_MiB": 111.25,
+   "groups": 2,
+   "blocks": 1780,
+   "block_refs": 5042,
+   "meta_MiB_est": 0.345,
+   "s": 39.0,
+   "total_MiB": 23.066
+  },
+  {
+   "config": "B64K_C128M",
+   "MiB": 21.773,
+   "unique_MiB": 111.25,
+   "groups": 1,
+   "blocks": 1780,
+   "block_refs": 5042,
+   "meta_MiB_est": 0.345,
+   "s": 57.6,
+   "total_MiB": 22.118
+  },
+  {
+   "config": "B128K_C32M",
+   "MiB": 23.126,
+   "unique_MiB": 117.69,
+   "groups": 4,
+   "blocks": 942,
+   "block_refs": 2522,
+   "meta_MiB_est": 0.177,
+   "s": 22.1,
+   "total_MiB": 23.303
+  },
+  {
+   "config": "B128K_C64M",
+   "MiB": 22.409,
+   "unique_MiB": 117.69,
+   "groups": 2,
+   "blocks": 942,
+   "block_refs": 2522,
+   "meta_MiB_est": 0.177,
+   "s": 36.2,
+   "total_MiB": 22.586
+  },
+  {
+   "config": "B128K_C128M",
+   "MiB": 21.779,
+   "unique_MiB": 117.69,
+   "groups": 1,
+   "blocks": 942,
+   "block_refs": 2522,
+   "meta_MiB_est": 0.177,
+   "s": 57.0,
+   "total_MiB": 21.956
+  },
+  {
+   "config": "B256K_C32M",
+   "MiB": 23.54,
+   "unique_MiB": 126.94,
+   "groups": 4,
+   "blocks": 509,
+   "block_refs": 1263,
+   "meta_MiB_est": 0.092,
+   "s": 21.2,
+   "total_MiB": 23.632
+  },
+  {
+   "config": "B256K_C64M",
+   "MiB": 22.159,
+   "unique_MiB": 126.94,
+   "groups": 2,
+   "blocks": 509,
+   "block_refs": 1263,
+   "meta_MiB_est": 0.092,
+   "s": 34.9,
+   "total_MiB": 22.251
+  },
+  {
+   "config": "B256K_C128M",
+   "MiB": 21.781,
+   "unique_MiB": 126.94,
+   "groups": 1,
+   "blocks": 509,
+   "block_refs": 1263,
+   "meta_MiB_est": 0.092,
+   "s": 57.7,
+   "total_MiB": 21.873
+  },
+  {
+   "config": "B512K_C32M",
+   "MiB": 24.602,
+   "unique_MiB": 140.44,
+   "groups": 5,
+   "blocks": 284,
+   "block_refs": 636,
+   "meta_MiB_est": 0.049,
+   "s": 20.3,
+   "total_MiB": 24.651
+  },
+  {
+   "config": "B512K_C64M",
+   "MiB": 23.102,
+   "unique_MiB": 140.44,
+   "groups": 3,
+   "blocks": 284,
+   "block_refs": 636,
+   "meta_MiB_est": 0.049,
+   "s": 33.1,
+   "total_MiB": 23.151
+  },
+  {
+   "config": "B512K_C128M",
+   "MiB": 22.98,
+   "unique_MiB": 140.44,
+   "groups": 2,
+   "blocks": 284,
+   "block_refs": 636,
+   "meta_MiB_est": 0.049,
+   "s": 53.1,
+   "total_MiB": 23.029
+  },
+  {
+   "config": "B512K_C256M",
+   "MiB": 21.788,
+   "unique_MiB": 140.44,
+   "groups": 1,
+   "blocks": 284,
+   "block_refs": 636,
+   "meta_MiB_est": 0.049,
+   "s": 56.2,
+   "total_MiB": 21.837
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 33.69,
+ "best": "B512K_C256M",
+ "seconds": 766,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B256K_C128M"
+}

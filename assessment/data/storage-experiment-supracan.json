@@ -1,0 +1,86 @@
+{
+ "prefix": "Funtech - Super Acan",
+ "sources": {
+  "Funtech - Super Acan": 12
+ },
+ "dat": "Funtech - Super Acan (Parent-Clone) (20260913-064553).zip",
+ "families": 12,
+ "files": 13,
+ "zip_MiB": 11.72,
+ "raw_MiB": 22.5,
+ "unique_files_MiB": 22.5,
+ "rows": [
+  {
+   "config": "B16K_C32M",
+   "MiB": 9.394,
+   "unique_MiB": 20.5,
+   "groups": 1,
+   "blocks": 1312,
+   "block_refs": 1440,
+   "meta_MiB_est": 0.168,
+   "s": 8.9,
+   "total_MiB": 9.562
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 9.393,
+   "unique_MiB": 20.59,
+   "groups": 1,
+   "blocks": 659,
+   "block_refs": 720,
+   "meta_MiB_est": 0.084,
+   "s": 8.9,
+   "total_MiB": 9.477
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 9.394,
+   "unique_MiB": 20.81,
+   "groups": 1,
+   "blocks": 333,
+   "block_refs": 360,
+   "meta_MiB_est": 0.042,
+   "s": 8.6,
+   "total_MiB": 9.436
+  },
+  {
+   "config": "B128K_C32M",
+   "MiB": 9.395,
+   "unique_MiB": 21.0,
+   "groups": 1,
+   "blocks": 168,
+   "block_refs": 180,
+   "meta_MiB_est": 0.021,
+   "s": 8.5,
+   "total_MiB": 9.416
+  },
+  {
+   "config": "B256K_C32M",
+   "MiB": 9.395,
+   "unique_MiB": 21.0,
+   "groups": 1,
+   "blocks": 84,
+   "block_refs": 90,
+   "meta_MiB_est": 0.011,
+   "s": 9.0,
+   "total_MiB": 9.406
+  },
+  {
+   "config": "B512K_C32M",
+   "MiB": 9.395,
+   "unique_MiB": 21.0,
+   "groups": 1,
+   "blocks": 42,
+   "block_refs": 45,
+   "meta_MiB_est": 0.005,
+   "s": 9.3,
+   "total_MiB": 9.4
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 9.67,
+ "best": "B512K_C32M",
+ "seconds": 56,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B64K_C32M"
+}

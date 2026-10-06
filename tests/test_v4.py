@@ -585,6 +585,10 @@ class NewCartridgePlatformTests(_Base):
         self.assertEqual(engine.parse_sms(sms_rom(sdsc=True))['hardware']['sdsc_title'], 'HOMEBREW')
         bad = bytearray(sms_rom()); bad[5] ^= 1
         self.assertIn('declared checksum differs from computed checksum', engine.parse_sms(bytes(bad))['warnings'])
+        gg = bytearray(sms_rom()); gg[0x7FFF] = (gg[0x7FFF] & 0x0F) | 0x60; gg[0x7FFA:0x7FFC] = b'\0\0'  # GG Export, checksum 0
+        self.assertEqual((engine.parse_sms(bytes(gg))['parse_status'], engine.parse_sms(bytes(gg))['hardware']['region']), ('valid', 'GG Export'))
+        gg[0x7FFF] = (gg[0x7FFF] & 0x0F) | 0x40  # SMS Export with checksum 0
+        self.assertEqual(engine.parse_sms(bytes(gg))['warnings'], ['no checksum declared (0)'])
 
     def test_32x_uses_md_header_and_tolerates_zero_checksum(self):
         rom = bytearray(md_rom(size=1 << 20, seed=74)); rom[0x100:0x110] = b'SEGA 32X        '; rom[0x3C0:0x3D0] = b'MARS CHECK MODE '
@@ -759,6 +763,96 @@ class MegaDriveTests(_Base):
         row = self.db.c.execute('SELECT * FROM v_md_headers').fetchone()
         self.assertEqual((row['system_type'], row['checksum_valid'], row['parse_status']), ('SEGA MEGA DRIVE', 1, 'valid'))
         self.assertEqual(self.db.c.execute('SELECT format FROM roms').fetchone()[0], 'md')
+
+
+def pce_rom(size=0x40000, seed=80):
+    rom = bytearray(random.Random(seed).randbytes(size)); rom[0x1FFE:0x2000] = (0xE000).to_bytes(2, 'little'); return bytes(rom)
+
+
+def vb_rom(size=1 << 20, seed=81, code=b'VZZE'):
+    rom = bytearray(random.Random(seed).randbytes(size)); h = len(rom) - 0x220
+    rom[h:h + 20] = b'SYNTH VIRTUAL'.ljust(20, b' '); rom[h + 0x19:h + 0x1B] = b'01'; rom[h + 0x1B:h + 0x1F] = code; rom[h + 0x1F] = 1
+    return bytes(rom)
+
+
+def msx_cart(seed=82, offset=0x0000, size=0x8000):
+    rom = bytearray(random.Random(seed).randbytes(size)); rom[offset:offset + 10] = b'AB' + (0x4010).to_bytes(2, 'little') + bytes(6); return bytes(rom)
+
+
+class PcEngineTests(_Base):
+    """PC Engine / SuperGrafx HuCards, MSX, Virtual Boy (2026-10-06 platforms)."""
+    platform = 'pcengine'
+
+    def test_pce_copier_header_shares_body_blocks_and_ra_hash(self):
+        body = pce_rom(); headered = random.Random(83).randbytes(512) + body
+        p = engine.parse_pce(headered); h = p['hardware']
+        self.assertEqual((p['parse_status'], h['copier_header'], h['rom_size'], h['banks'], h['reset_vector']), ('warning', 1, 0x40000, 32, 0xE000))
+        q = engine.parse_pce(body); self.assertEqual((q['parse_status'], q['hardware']['copier_header']), ('valid', 0))
+        self.solid_import([('P (Japan).pce', body)])
+        self.assertEqual([len(b) for _, b in self.db.missing_blocks(headered, set())], [512])  # only the copier header is new
+        self.loose_import('P (Japan) [h].pce', headered, 'P (Japan)')
+        self.assertEqual({r[0] for r in self.db.c.execute('SELECT ra_md5 FROM rom_ra_hashes')}, {hashlib.md5(body).hexdigest()})
+        self.assertEqual(self.db.c.execute('SELECT count(*) FROM v_pce_headers').fetchone()[0], 2)
+        self.assertTrue(self.db.audit(archives=True)['ok'])
+        U = importlib.import_module('update_db'); self.assertIn('.sgx', U.OTHER_PLATFORM_EXT['pcengine']); self.assertIn('.pce', U.OTHER_PLATFORM_EXT['supergrafx'])
+
+    def test_msx_media_and_vb_header(self):
+        m = engine.parse_msx(msx_cart()); self.assertEqual((m['format'], m['parse_status'], m['hardware']['header_offset'], m['hardware']['init']), ('msx_cart', 'valid', 0, 0x4010))
+        self.assertEqual(engine.parse_msx(msx_cart(offset=0x4000))['hardware']['header_offset'], 0x4000)
+        self.assertEqual(engine.parse_msx(b'\xeb' + bytes(737279))['hardware']['media'], 'disk')
+        self.assertEqual(engine.parse_msx(engine.MSX_CAS_MAGIC + bytes(64))['format'], 'msx_tape')
+        self.assertEqual(engine.parse_msx(bytes(0x8000))['parse_status'], 'unclassified')
+        v = engine.parse_vb(vb_rom()); self.assertEqual((v['parse_status'], v['hardware']['title'], v['hardware']['maker_code'], v['hardware']['game_code'], v['hardware']['version']),
+                                                       ('valid', 'SYNTH VIRTUAL', '01', 'VZZE', 1))
+        self.assertEqual(engine.parse_vb(vb_rom(code=bytes(4)))['parse_status'], 'warning')
+        self.assertEqual(engine.parse_vb(bytes(3000))['parse_status'], 'unclassified')
+        self.assertEqual(engine.ra_hash('virtualboy', vb_rom())[0], hashlib.md5(vb_rom()).hexdigest())
+
+
+class MsxTests(_Base):
+    platform = 'msx2'
+
+    def test_msx_rows_and_platform_annotation(self):
+        self.solid_import([('M (Japan).rom', msx_cart(seed=84))])
+        rid = self.db.c.execute('SELECT id FROM roms').fetchone()[0]
+        with self.db.c: self.db.c.execute("INSERT INTO rom_annotations VALUES (?,'platform','tag','tools/msx_route.py','2026-10-06T00:00:00+00:00')", (rid,))
+        row = self.db.c.execute('SELECT * FROM v_msx_headers').fetchone()
+        self.assertEqual((row['media'], row['header_offset'], row['platform_evidence']), ('cartridge', '0000', 'tag'))
+        self.assertTrue(self.db.audit(archives=True)['ok'])
+
+    def test_route_platform_first_medium_second(self):
+        R = importlib.import_module('msx_route'); d = self.root / 'dats'; d.mkdir()
+        one, two, hack_base = msx_cart(seed=85), msx_cart(seed=86, size=0x20000), msx_cart(seed=87, size=0x20000)
+        for name, games in (('Microsoft - MSX', [('Alpha (Japan)', None, one)]), ('Microsoft - MSX2', [('Beta (Japan)', None, two), ('Gamma (Japan)', None, hack_base)])):
+            with zipfile.ZipFile(d / f'{name} (Parent-Clone) (20260101-000000).zip', 'w') as z: z.writestr('x.dat', dat_xml(games))
+        R.add_dat_rom_blocks('msx2', hack_base, d)
+        cur = self.root / 'routing.csv'; cur.write_text('zip_name,platform,basis,note\nOdd (Japan).zip,msx2,manual,\n', encoding='utf-8')
+        route = lambda n, data, member='x.rom': R.route(n, [(member, data)], d, cur)
+        self.assertEqual(route('Whatever.zip', two), ('msx2', 'dat'))
+        self.assertEqual(route('Whatever.zip', one), ('msx1', 'dat'))
+        self.assertEqual(route('New (Japan) (MSX2).zip', b'new'), ('msx2', 'tag'))
+        self.assertEqual(route('Disk.zip', b'new', 'Disk.mx2'), ('msx2', 'tag'))
+        self.assertEqual(route('Beta (Japan) (Rev 1).zip', b'rev'), ('msx2', 'title'))
+        self.assertEqual(route('Alpha (Japan) [T-En].zip', b'tr'), ('msx1', 'title'))
+        self.assertEqual(route('Hack (Japan).zip', hack_base[:-8192] + bytes(8192)), ('msx2', 'blocks'))
+        self.assertEqual(route('Odd (Japan).zip', b'odd'), ('msx2', 'curated:manual'))
+        self.assertEqual(route('Unknown (Japan).zip', b'unknown'), ('msx1', 'default'))
+        import_ra = importlib.import_module('import_ra'); F = importlib.import_module('finalize_db')
+        self.assertEqual(import_ra.CONSOLES['msx1'], import_ra.CONSOLES['msx2']); self.assertIn('msx1', F.SHARED_RA_CONSOLE)
+        self.assertEqual(F.SIBLINGS['msx2'], ('msx1',)); self.assertIn('msx-routing.csv', F.resource_files('msx1')); self.assertNotIn('msx-routing.csv', F.resource_files('gb'))
+
+
+class UnsupportedRaTests(_Base):
+    platform = 'gameandwatch'
+
+    def test_plain_platform_and_empty_ra_report(self):
+        self.solid_import([('Ball (World).bin', random.Random(88).randbytes(4096))])
+        r = self.db.c.execute('SELECT format,parse_status FROM roms').fetchone(); self.assertEqual(tuple(r), ('bin', 'unclassified'))
+        self.assertTrue(self.db.audit(archives=True)['ok'])
+        ra = importlib.import_module('import_ra'); self.assertNotIn('gameandwatch', ra.CONSOLES); self.assertIn('supracan', ra.UNSUPPORTED)
+        out = importlib.import_module('ra_report').main(str(self.path), str(self.root / 'r'), {}, False)
+        self.assertEqual((out['supported'], out['ra_games_with_achievements']), (False, 0))
+        self.assertEqual((self.root / 'r-missing.csv').read_text().splitlines()[0].split(',')[0], 'ra_game_id')
 
 
 if __name__ == '__main__':

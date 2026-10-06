@@ -30,12 +30,18 @@ RA_FOLDERS = {'nes': ('RA - Nintendo Entertainment System', 'RA - Nintendo Famic
               'satellaview': ('RA - Super Nintendo Entertainment System',),
               'mastersystem': ('RA - Sega Master System',), 'sega32x': ('RA - Sega 32X',), 'pokemini': ('RA - Nintendo Pokemon Mini',),
               # One RA set each for WonderSwan + Color and NeoGeo Pocket + Color: each side imports it and skips the other's files.
-              'wswan': ('RA - WonderSwan',), 'wswanc': ('RA - WonderSwan',), 'ngp': ('RA - SNK Neo Geo Pocket',), 'ngpc': ('RA - SNK Neo Geo Pocket',)}
+              'wswan': ('RA - WonderSwan',), 'wswanc': ('RA - WonderSwan',), 'ngp': ('RA - SNK Neo Geo Pocket',), 'ngpc': ('RA - SNK Neo Geo Pocket',),
+              'gamegear': ('RA - Sega Game Gear',), 'virtualboy': ('RA - Nintendo Virtual Boy',),
+              # The RA TurboGrafx-16 set holds SuperGrafx (.sgx) files too; the RA MSX set holds MSX and MSX2 games (tools/msx_route.py).
+              'pcengine': ('RA - NEC TurboGrafx-16',), 'supergrafx': ('RA - NEC TurboGrafx-16',), 'msx1': ('RA - Microsoft MSX',), 'msx2': ('RA - Microsoft MSX',)}
 # Files of another platform found in a folder outside this platform's No-Intro set are skipped and listed in the
 # report: FDS images belong to the FDS database, not NES; Satellaview (BS-X) .bs files to the Satellaview database,
 # not SNES; cartridge files (.nes, .sfc ...) in an RA FDS or SNES folder belong to NES or SNES.
 OTHER_PLATFORM_EXT = {'nes': {'.fds', '.qd'}, 'fds': {'.nes', '.unf', '.unif', '.nsf'}, 'snes': {'.bs'},
-                      'satellaview': {'.sfc', '.smc', '.swc', '.fig'}, 'wswan': {'.wsc'}, 'wswanc': {'.ws'}, 'ngp': {'.ngc'}, 'ngpc': {'.ngp'}}
+                      'satellaview': {'.sfc', '.smc', '.swc', '.fig'}, 'wswan': {'.wsc'}, 'wswanc': {'.ws'}, 'ngp': {'.ngc'}, 'ngpc': {'.ngp'},
+                      'pcengine': {'.sgx'}, 'supergrafx': {'.pce'}}
+# Shared folders split by platform rather than extension: platform code -> router(zip name, [(member, bytes)]) -> (code, basis).
+ROUTED = {'msx1', 'msx2'}
 
 
 def log(*a): print(time.strftime('%H:%M:%S'), *a, flush=True)
@@ -221,12 +227,21 @@ def main():
         own = p.parent.name == cfg['nointro'] or p.parent.name.startswith(cfg['nointro'] + ' (')
         foreign = [] if own else sorted({pathlib.PurePosixPath(x.filename).suffix.lower() for x in infos} & OTHER_PLATFORM_EXT.get(plat, set()))
         if foreign: other_platform.append({'path': str(p), 'extensions': foreign}); continue
+        route = None
+        if plat in ROUTED and not own:  # platform first (MSX1 / MSX2), medium second
+            msx_route = importlib.import_module('msx_route'); msx_route.prime_blocks()
+            with zipfile.ZipFile(p) as z: route = msx_route.route(p.name, [(x.filename, z.read(x)) for x in infos])
+            if route[0] != plat: other_platform.append({'path': str(p), 'platform': route[0], 'basis': route[1]}); continue
         raw = p.read_bytes(); keys = [index.get((f'{x.CRC:08x}', x.file_size)) for x in infos]
         fam = next((k for k in keys if k), None)  # otherwise assigned after import (shared blocks, then title)
         with db.c:
             db.c.execute('SAVEPOINT onefile')
             try:
-                if db.adapter: db.import_zip_bytes(p, raw, None, None, fam)
+                if db.adapter:
+                    rids = db.import_zip_bytes(p, raw, None, None, fam)
+                    for rid in rids if route else ():  # why this shared-folder file belongs here ('default' = unconfirmed)
+                        db.c.execute("INSERT OR IGNORE INTO rom_annotations VALUES (?,'platform',?,?,?)",
+                                     (rid, route[1], 'data/msx-routing.csv' if route[1].startswith('curated') else 'tools/msx_route.py', B.datetime_now()))
                 else:  # NES path: No-Intro folders declare headered/headerless; other collections are detected per file
                     mode = 'headerless' if '(Headerless)' in p.parent.name else 'headered' if p.parent.name.startswith(cfg['nointro']) else 'auto'
                     db.import_rom_path(p, mode)
@@ -251,7 +266,8 @@ def main():
         if added or new_sets: report['scan'] = {ds: db.scan(ds) for ds in sets}
         report['rom_release_links_added'] = link_roms(db)
     report['packages'] = B.build_packages(db, sets) if (added or new_sets) else 'unchanged'
-    if args.ra:
+    if args.ra and plat not in importlib.import_module('import_ra').CONSOLES: report['retroachievements'] = {'supported': False}
+    elif args.ra:
         ra = importlib.import_module('import_ra')
         with db.c: report['retroachievements'] = ra.import_snapshot(db.c, plat, ra.fetch(ra.CONSOLES[plat]), B.datetime_now())
     if args.names or new_sets:

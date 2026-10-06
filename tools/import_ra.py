@@ -8,7 +8,10 @@ import argparse, datetime, hashlib, json, os, pathlib, re, sqlite3, sys, urllib.
 
 ENDPOINT = 'https://retroachievements.org/API/API_GetGameList.php'
 CONSOLES = {'snes': 3, 'megadrive': 1, 'nes': 7, 'gb': 4, 'gbc': 6, 'gba': 5, 'fds': 81, 'satellaview': 3,  # RA lists Satellaview games under SNES
-            'mastersystem': 11, 'sega32x': 10, 'wswan': 53, 'wswanc': 53, 'ngp': 14, 'ngpc': 14, 'pokemini': 24}  # one RA console each for WS+WSC and NGP+NGPC
+            'mastersystem': 11, 'sega32x': 10, 'wswan': 53, 'wswanc': 53, 'ngp': 14, 'ngpc': 14, 'pokemini': 24,  # one RA console each for WS+WSC and NGP+NGPC
+            'gamegear': 15, 'pcengine': 8, 'supergrafx': 8, 'msx1': 29, 'msx2': 29, 'virtualboy': 28}  # PC Engine+SuperGrafx and MSX+MSX2 share one too
+# Platforms RetroAchievements does not support (no console): Game & Watch, Super A'Can. Their reports say so.
+UNSUPPORTED = {'gameandwatch', 'supracan'}
 TOKEN_FILE = pathlib.Path('~/Sync/API_TOKEN/retroachievements.md').expanduser()
 
 

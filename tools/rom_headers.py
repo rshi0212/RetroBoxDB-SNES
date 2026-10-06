@@ -1,11 +1,11 @@
-"""Cartridge / disk header parsers (SNES, Mega Drive, GB, GBC, GBA, FDS, Satellaview, SMS, 32X, WonderSwan, NeoGeo Pocket, Pokemon Mini). Python >=3.10, stdlib only.
+"""Cartridge / disk header parsers (SNES, Mega Drive, GB, GBC, GBA, FDS, Satellaview, Master System, Game Gear, 32X, WonderSwan, NeoGeo Pocket, Pokemon Mini, PC Engine, SuperGrafx, MSX, Virtual Boy, Game & Watch, Super A'Can). Python >=3.10, stdlib only.
 
 Parsing is descriptive: the stored file bytes are never modified, and a header
 declaration is evidence about the dump, not proof of physical cartridge hardware.
 """
 import hashlib, json
 
-PARSER_VERSION = 'cart-headers-1'
+PARSER_VERSION = 'cart-headers-2'  # 2: SMS/GG checksum 0 = not declared (2026-10-06)
 
 
 def _js(x): return json.dumps(x, ensure_ascii=False, sort_keys=True)
@@ -429,7 +429,10 @@ def parse_sms(data):
     elif off != 0x7FF0: out['warnings'].append(f'header at {off:#06x}; the export BIOS reads only 0x7FF0')
     if hw['size_declared'] is None and h: out['warnings'].append('undefined ROM size code')
     elif hw['size_declared'] and hw['size_declared'] > len(data): out['warnings'].append('declared size larger than the file')
-    if hw['checksum_valid'] == 0: out['warnings'].append('declared checksum differs from computed checksum')
+    if hw['checksum_valid'] == 0 and hw['checksum_declared'] == 0:
+        # Game Gear BIOSes do not check the checksum and most GG cartridges declare 0; on SMS it is a missing value.
+        if not (hw['region_code'] or 0) >= 5: out['warnings'].append('no checksum declared (0)')
+    elif hw['checksum_valid'] == 0: out['warnings'].append('declared checksum differs from computed checksum')
     if out['warnings']: out['parse_status'] = 'warning'
     return out
 
@@ -523,5 +526,79 @@ def parse_pokemini(data):
     return out
 
 
+# ---------------------------------------------------------------- NEC PC Engine / TurboGrafx-16 / SuperGrafx (HuCard)
+
+def parse_pce(data):
+    """HuCards have no internal header. A 512-byte copier header (file size % 8192 == 512) is recorded and cut into its
+    own block; the reset vector at the end of the first 8 KiB bank is recorded. Descriptive only."""
+    head = 512 if len(data) % 0x2000 == 512 else 0
+    body = data[head:]
+    out = dict(format='pce', parse_status='valid', components=([('copier_header', 0, 512)] if head else []) + ([('program', head, len(body))] if body else []),
+               hardware=None, warnings=[])
+    if not body: out.update(parse_status='unclassified'); out['warnings'].append('empty file'); return out
+    hw = dict(copier_header=int(bool(head)), rom_size=len(body), banks=len(body) // 0x2000, partial_bank_bytes=len(body) % 0x2000,
+              reset_vector=int.from_bytes(body[0x1FFE:0x2000], 'little') if len(body) >= 0x2000 else None,
+              raw_json=_js({'parser': PARSER_VERSION, 'interpretation': 'HuCard image facts; HuCards carry no internal header (mapper and region need external evidence)'}))
+    out['hardware'] = hw
+    if hw['partial_bank_bytes']: out['warnings'].append('size is not a whole number of 8 KiB banks')
+    if head: out['warnings'].append('512-byte copier header present')
+    if out['warnings']: out['parse_status'] = 'warning'
+    return out
+
+
+# ---------------------------------------------------------------- Microsoft MSX / MSX2 (cartridge, disk, tape)
+
+MSX_CAS_MAGIC = bytes.fromhex('1fa6debacc137d74')
+MSX_DISK_SIZES = {327680: '1DD 8 sectors', 368640: '1DD 9 sectors', 655360: '2DD 8 sectors', 737280: '2DD 9 sectors'}
+
+
+def parse_msx(data):
+    """Cartridge ROM header 'AB' at 0x0000 or 0x4000 (INIT, STATEMENT, DEVICE, TEXT addresses); floppy images are
+    recognized by size and tapes by the CAS block magic. Machine generation (MSX1/MSX2) is not in the data and is
+    recorded separately (rom_annotations)."""
+    out = dict(format='msx_cart', parse_status='unclassified', components=[('file', 0, len(data))] if data else [], hardware=None, warnings=[])
+    if data[:8] == MSX_CAS_MAGIC:
+        out.update(format='msx_tape', hardware=dict(media='tape', header_offset=None, init=None, statement=None, device=None, text=None,
+                   raw_json=_js({'parser': PARSER_VERSION, 'interpretation': 'CAS tape image'})), parse_status='valid'); return out
+    if len(data) in MSX_DISK_SIZES and data[:1] in (b'\xeb', b'\xe9'):
+        out.update(format='msx_disk', hardware=dict(media='disk', header_offset=None, init=None, statement=None, device=None, text=None,
+                   raw_json=_js({'parser': PARSER_VERSION, 'geometry': MSX_DISK_SIZES[len(data)], 'interpretation': 'floppy image with a boot sector'})), parse_status='valid')
+        return out
+    off = next((o for o in (0x0000, 0x4000) if data[o:o + 2] == b'AB'), None)
+    if off is None:
+        out['warnings'].append('no AB cartridge header at 0x0000 or 0x4000'); return out
+    w = lambda i: int.from_bytes(data[off + i:off + i + 2], 'little')
+    out['hardware'] = dict(media='cartridge', header_offset=off, init=w(2), statement=w(4), device=w(6), text=w(8),
+                           raw_json=_js({'parser': PARSER_VERSION, 'header_hex': data[off:off + 16].hex(), 'interpretation': 'cartridge header declaration; mapper needs external evidence'}))
+    out['parse_status'] = 'valid'
+    return out
+
+
+# ---------------------------------------------------------------- Nintendo Virtual Boy
+
+def parse_vb(data):
+    """Game header 0x220 bytes before the end of the image: 20-byte Shift-JIS title, maker code, game code, version."""
+    out = dict(format='vb', parse_status='unclassified', components=[('file', 0, len(data))] if data else [], hardware=None, warnings=[])
+    if len(data) < 0x220 or len(data) & (len(data) - 1):
+        out['warnings'].append('size is not a power of two of at least 544 bytes'); return out
+    h = data[-0x220:-0x200]
+    out['components'] = [('program', 0, len(data) - 0x220), ('header', len(data) - 0x220, 0x20), ('vectors', len(data) - 0x200, 0x200)]
+    out['hardware'] = dict(title=_text(h[:20]), title_hex=h[:20].hex(), maker_code=_text(h[0x19:0x1B]), game_code=_text(h[0x1B:0x1F]), version=h[0x1F],
+                           raw_json=_js({'parser': PARSER_VERSION, 'header_hex': h.hex(), 'interpretation': 'cartridge header declaration'}))
+    out['parse_status'] = 'valid'
+    if not out['hardware']['game_code']: out['warnings'].append('empty game code'); out['parse_status'] = 'warning'
+    return out
+
+
+# ---------------------------------------------------------------- platforms without an internal header
+
+def parse_plain(data):
+    """Game & Watch (MCU ROM dumps) and Super A'Can cartridges define no internal header; only the file is recorded."""
+    return dict(format='bin', parse_status='unclassified', components=[('file', 0, len(data))] if data else [], hardware=None,
+                warnings=['no internal header is defined for this platform'])
+
+
 PARSERS = {'snes': parse_snes, 'megadrive': parse_md, 'gb': parse_gb, 'gbc': parse_gb, 'gba': parse_gba, 'fds': parse_fds, 'satellaview': parse_bsx,
-           'mastersystem': parse_sms, 'sega32x': parse_32x, 'wswan': parse_ws, 'wswanc': parse_ws, 'ngp': parse_ngp, 'ngpc': parse_ngp, 'pokemini': parse_pokemini}
+           'mastersystem': parse_sms, 'sega32x': parse_32x, 'wswan': parse_ws, 'wswanc': parse_ws, 'ngp': parse_ngp, 'ngpc': parse_ngp, 'pokemini': parse_pokemini,
+           'gamegear': parse_sms, 'pcengine': parse_pce, 'supergrafx': parse_pce, 'msx1': parse_msx, 'msx2': parse_msx, 'virtualboy': parse_vb,
+           'gameandwatch': parse_plain, 'supracan': parse_plain}

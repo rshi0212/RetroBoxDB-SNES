@@ -26,6 +26,10 @@ def _snes_cuts(data):
     return {512} if len(data) % 1024 == 512 else set()
 
 
+def _pce_cuts(data):
+    return {512} if len(data) % 0x2000 == 512 else set()
+
+
 def _md_cuts(data):
     return {512} if len(data) >= 512 and len(data) % 16384 == 512 and data[8:10] == b'\xAA\xBB' else set()
 
@@ -55,6 +59,14 @@ PLATFORM_ADAPTERS = {
     'ngp': {'name': 'SNK NeoGeo Pocket', 'parser': parse_ngp, 'cuts': lambda data: set(), 'table': 'ngp_hardware', 'rom_ext': ('.ngp', '.bin')},
     'ngpc': {'name': 'SNK NeoGeo Pocket Color', 'parser': parse_ngp, 'cuts': lambda data: set(), 'table': 'ngp_hardware', 'rom_ext': ('.ngc', '.ngp', '.bin')},
     'pokemini': {'name': 'Nintendo Pokemon Mini', 'parser': parse_pokemini, 'cuts': lambda data: set(), 'table': 'pokemini_hardware', 'rom_ext': ('.min',)},
+    'gamegear': {'name': 'Sega Game Gear', 'parser': parse_sms, 'cuts': lambda data: set(), 'table': 'sms_hardware', 'rom_ext': ('.gg', '.sms', '.bin')},
+    'pcengine': {'name': 'NEC PC Engine / TurboGrafx-16', 'parser': parse_pce, 'cuts': _pce_cuts, 'table': 'pce_hardware', 'rom_ext': ('.pce', '.bin')},
+    'supergrafx': {'name': 'NEC PC Engine SuperGrafx', 'parser': parse_pce, 'cuts': _pce_cuts, 'table': 'pce_hardware', 'rom_ext': ('.sgx', '.pce', '.bin')},
+    'msx1': {'name': 'Microsoft MSX', 'parser': parse_msx, 'cuts': lambda data: set(), 'table': 'msx_hardware', 'rom_ext': ('.rom', '.mx1', '.mx2', '.dsk', '.cas', '.bin')},
+    'msx2': {'name': 'Microsoft MSX2', 'parser': parse_msx, 'cuts': lambda data: set(), 'table': 'msx_hardware', 'rom_ext': ('.rom', '.mx2', '.mx1', '.dsk', '.cas', '.bin')},
+    'virtualboy': {'name': 'Nintendo Virtual Boy', 'parser': parse_vb, 'cuts': lambda data: set(), 'table': 'vb_hardware', 'rom_ext': ('.vb', '.vboy', '.bin')},
+    'gameandwatch': {'name': 'Nintendo Game & Watch', 'parser': parse_plain, 'cuts': lambda data: set(), 'table': None, 'rom_ext': ('.bin',)},
+    'supracan': {'name': "Funtech Super A'Can", 'parser': parse_plain, 'cuts': lambda data: set(), 'table': None, 'rom_ext': ('.bin',)},
 }
 
 
@@ -75,13 +87,16 @@ def torrentzip_hashes(entries):
 
 def ra_hash(platform, data):
     """RetroAchievements content hash (rcheevos rc_hash_nes / rc_hash_fds / rc_hash_snes; plain buffer MD5 for Mega Drive, GB, GBC,
-    GBA, Master System, 32X, WonderSwan, NeoGeo Pocket and Pokemon Mini)."""
+    GBA, Master System, Game Gear, 32X, WonderSwan, NeoGeo Pocket, Pokemon Mini, MSX and Virtual Boy; rc_hash_pce for PC Engine
+    and SuperGrafx)."""
     if platform == 'nes' and data[:4] == b'NES\x1a':
         return hashlib.md5(data[16:]).hexdigest(), 'md5 after the 16-byte NES header (rcheevos nes)'
     if platform == 'fds' and data[:4] == b'FDS\x1a':
         return hashlib.md5(data[16:]).hexdigest(), 'md5 after the 16-byte fwNES header (rcheevos fds)'
     if platform in ('snes', 'satellaview') and len(data) % 0x2000 == 512:  # rcheevos hashes BS-X files with the SNES method
         return hashlib.md5(data[512:]).hexdigest(), 'md5 after 512-byte copier header (rcheevos snes)'
+    if platform in ('pcengine', 'supergrafx') and len(data) % 0x20000 == 512:
+        return hashlib.md5(data[512:]).hexdigest(), 'md5 after 512-byte copier header (rcheevos pce)'
     return hashlib.md5(data).hexdigest(), 'md5 of complete file (rcheevos buffer)'
 
 

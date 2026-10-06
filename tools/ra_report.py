@@ -12,7 +12,8 @@ import collections, csv, json, pathlib, sqlite3, sys
 
 # rcheevos hashing per RA console ID; matching is exact hash equality.
 RULES = {7: 'MD5 of the ROM body without the 16-byte iNES/NES 2.0 header (headered and headerless dumps hash the same)',
-         3: 'MD5 of the file after a 512-byte copier header when size % 8192 == 512, otherwise of the whole file'}
+         3: 'MD5 of the file after a 512-byte copier header when size % 8192 == 512, otherwise of the whole file',
+         8: 'MD5 of the file after a 512-byte copier header when size % 131072 == 512, otherwise of the whole file'}
 
 
 def main(db, prefix, siblings=None, shared_console=False):
@@ -21,6 +22,16 @@ def main(db, prefix, siblings=None, shared_console=False):
     platform, so only games tied to this database (local ROM, DAT entry or DB Export file) are reported."""
     c = sqlite3.connect(f'file:{db}?mode=ro', uri=True); c.row_factory = sqlite3.Row
     snap = c.execute('SELECT * FROM ra_snapshots ORDER BY id DESC LIMIT 1').fetchone()
+    if snap is None:  # RetroAchievements has no console for this platform (Game & Watch, Super A'Can): empty report
+        out = {'supported': False, 'snapshot_id': None, 'console_id': None, 'ra_games_with_achievements': 0,
+               'status_totals': {s: 0 for s in ('local', 'local_other_platform', 'dat_only', 'nointro_db_only', 'unmatched')},
+               'by_category': {}, 'local_roms_with_achievements': 0, 'missing_by_category': {},
+               'note': 'RetroAchievements does not support this platform; no snapshot is stored'}
+        for suffix, cols in (('-games.csv', ['ra_game_id', 'title', 'category', 'achievements', 'status']), ('-collection-unknown.csv', ['collection', 'zip_name', 'original_name', 'ra_md5']),
+                             ('-missing.csv', ['ra_game_id', 'title', 'category', 'achievements', 'status', 'dat_games', 'nointro_db_titles'])):
+            with open(prefix + suffix, 'w', newline='', encoding='utf-8') as f: csv.writer(f).writerow(cols)
+        with open(prefix + '.json', 'w', encoding='utf-8') as f: json.dump(out, f, ensure_ascii=False, indent=2)
+        c.close(); print(json.dumps(out, ensure_ascii=False, indent=2)); return out
     games = c.execute('SELECT * FROM ra_games WHERE snapshot_id=? AND num_achievements>0 ORDER BY ra_game_id', (snap['id'],)).fetchall()
     local = {}
     for r in c.execute('SELECT ra_game_id,group_concat(DISTINCT release_title) AS t,count(DISTINCT rom_id) AS n FROM v_rom_ra_matches GROUP BY ra_game_id'):

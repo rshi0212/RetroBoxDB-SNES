@@ -1,0 +1,88 @@
+{
+ "prefix": "NEC - PC Engine SuperGrafx",
+ "sources": {
+  "NEC - PC Engine SuperGrafx": 9,
+  "NEC - PC Engine SuperGrafx (Aftermarket)": 1,
+  "RA - NEC TurboGrafx-16": 4
+ },
+ "dat": "NEC - PC Engine SuperGrafx (Parent-Clone) (20250913-112105).zip",
+ "families": 11,
+ "files": 14,
+ "zip_MiB": 6.59,
+ "raw_MiB": 11.12,
+ "unique_files_MiB": 5.12,
+ "rows": [
+  {
+   "config": "B16K_C32M",
+   "MiB": 2.195,
+   "unique_MiB": 4.06,
+   "groups": 1,
+   "blocks": 260,
+   "block_refs": 712,
+   "meta_MiB_est": 0.049,
+   "s": 1.6,
+   "total_MiB": 2.244
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 2.195,
+   "unique_MiB": 4.09,
+   "groups": 1,
+   "blocks": 131,
+   "block_refs": 356,
+   "meta_MiB_est": 0.025,
+   "s": 1.6,
+   "total_MiB": 2.22
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 2.195,
+   "unique_MiB": 4.19,
+   "groups": 1,
+   "blocks": 67,
+   "block_refs": 178,
+   "meta_MiB_est": 0.013,
+   "s": 1.6,
+   "total_MiB": 2.208
+  },
+  {
+   "config": "B128K_C32M",
+   "MiB": 2.195,
+   "unique_MiB": 4.25,
+   "groups": 1,
+   "blocks": 34,
+   "block_refs": 89,
+   "meta_MiB_est": 0.006,
+   "s": 1.6,
+   "total_MiB": 2.201
+  },
+  {
+   "config": "B256K_C32M",
+   "MiB": 2.195,
+   "unique_MiB": 4.38,
+   "groups": 1,
+   "blocks": 18,
+   "block_refs": 45,
+   "meta_MiB_est": 0.003,
+   "s": 1.7,
+   "total_MiB": 2.198
+  },
+  {
+   "config": "B512K_C32M",
+   "MiB": 2.195,
+   "unique_MiB": 4.62,
+   "groups": 1,
+   "blocks": 10,
+   "block_refs": 23,
+   "meta_MiB_est": 0.002,
+   "s": 1.7,
+   "total_MiB": 2.197
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 2.77,
+ "best": "B512K_C32M",
+ "seconds": 11,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B128K_C32M"
+}

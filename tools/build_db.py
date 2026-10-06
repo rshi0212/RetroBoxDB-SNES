@@ -68,6 +68,25 @@ PLATFORMS = {
                  names=ROOT / 'data' / 'SNK - NeoGeo Pocket Color.csv', block=131072, solid=256 * MIB, dictionary=256 * MIB, workers=1),
     'pokemini': dict(label='PokemonMini', name='Nintendo Pokemon Mini', nointro='Nintendo - Pokemon Mini', batocera='pokemini',
                      names=ROOT / 'data' / 'Nintendo - Pokemon Mini.csv', block=262144, solid=32 * MIB, dictionary=32 * MIB, workers=1),
+    # 2026-10-06 batch 3. PC Engine/SuperGrafx share the RA TurboGrafx-16 folder (split by extension); MSX/MSX2 share
+    # the RA MSX folder (split by platform with tools/msx_route.py). Game & Watch and Super A'Can: no RA console.
+    'gamegear': dict(label='GameGear', name='Sega Game Gear', nointro='Sega - Game Gear', batocera='gamegear',
+                     names=ROOT / 'data' / 'Sega - Game Gear.csv', block=32768, solid=256 * MIB, dictionary=256 * MIB, workers=1),
+    'pcengine': dict(label='PCEngine', name='NEC PC Engine / TurboGrafx-16', nointro='NEC - PC Engine - TurboGrafx-16', batocera='pcengine',
+                     names=ROOT / 'data' / 'NEC - PC Engine - TurboGrafx-16.csv', block=131072, solid=256 * MIB, dictionary=256 * MIB, workers=1),
+    'supergrafx': dict(label='SuperGrafx', name='NEC PC Engine SuperGrafx', nointro='NEC - PC Engine SuperGrafx', batocera='supergrafx',
+                       names=ROOT / 'data' / 'NEC - PC Engine SuperGrafx.csv', block=131072, solid=32 * MIB, dictionary=32 * MIB, workers=1),
+    'msx1': dict(label='MSX', name='Microsoft MSX', nointro='Microsoft - MSX', batocera='msx1',
+                 names=ROOT / 'data' / 'Microsoft - MSX.csv', block=65536, solid=64 * MIB, dictionary=64 * MIB, workers=1),
+    'msx2': dict(label='MSX2', name='Microsoft MSX2', nointro='Microsoft - MSX2', batocera='msx2',
+                 names=ROOT / 'data' / 'Microsoft - MSX2.csv', block=131072, solid=128 * MIB, dictionary=128 * MIB, workers=1),
+    'virtualboy': dict(label='VirtualBoy', name='Nintendo Virtual Boy', nointro='Nintendo - Virtual Boy', batocera='virtualboy',
+                       names=ROOT / 'data' / 'Nintendo - Virtual Boy.csv', block=262144, solid=128 * MIB, dictionary=128 * MIB, workers=1),
+    'gameandwatch': dict(label='GameAndWatch', name='Nintendo Game & Watch', nointro='Nintendo - Game & Watch', batocera='gameandwatch',
+                         names=ROOT / 'data' / 'Nintendo - Game & Watch.csv', block=4096, solid=32 * MIB, dictionary=32 * MIB, workers=1),
+    # No Chinese name source yet (names are skipped while the CSV is absent).
+    'supracan': dict(label='SuperACan', name="Funtech Super A'Can", nointro='Funtech - Super Acan', batocera='supracan',
+                     names=ROOT / 'data' / 'Funtech - Super Acan.csv', block=65536, solid=32 * MIB, dictionary=32 * MIB, workers=1),
 }
 
 
@@ -479,12 +498,14 @@ def main():
     checkpoint(work, report, 'packages')
 
     ra = importlib.import_module('import_ra')
-    try:
-        raw = ra.fetch(ra.CONSOLES[plat])
-        with db.c: report['retroachievements'] = ra.import_snapshot(db.c, plat, raw, datetime_now())
-        log('retroachievements', json.dumps(report['retroachievements'], ensure_ascii=False))
-    except (SystemExit, Exception) as e:  # RA is an extension: record and continue
-        report['retroachievements'] = {'error': str(e)}; log('retroachievements FAILED', e)
+    if plat not in ra.CONSOLES: report['retroachievements'] = {'supported': False, 'note': 'RetroAchievements has no console for this platform'}
+    else:
+        try:
+            raw = ra.fetch(ra.CONSOLES[plat])
+            with db.c: report['retroachievements'] = ra.import_snapshot(db.c, plat, raw, datetime_now())
+            log('retroachievements', json.dumps(report['retroachievements'], ensure_ascii=False))
+        except (SystemExit, Exception) as e:  # RA is an extension: record and continue
+            report['retroachievements'] = {'error': str(e)}; log('retroachievements FAILED', e)
 
     checkpoint(work, report, 'retroachievements')
     if cfg['names'].exists():
