@@ -2,7 +2,7 @@
 
 Storage v3 adds bounded shared compression groups and still reads v2 files.
 
-Base layer of the unified engine: the NES v3 engine (resource engine.py of the v3 RetroBoxDB.sqlite) with
+Base layer of the unified engine: the NES v3 engine (resource engine.py of the v3 NES database) with
 post-audit fixes (2026-10-04): naming decisions only for full-file DAT scopes, DAT size bounds, raw DAT size
 limit, safe_name rejects Unicode control/format characters, clearer export error. tools/engine_v4.py extends it
 (storage v4, platform adapters); see reports/audit-resolution-20261004.md and RetroBoxDB.Storage-v4.Technical-Design.en.md.

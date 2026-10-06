@@ -1,0 +1,98 @@
+{
+ "prefix": "SNK - NeoGeo Pocket",
+ "sources": {
+  "SNK - NeoGeo Pocket": 13,
+  "RA - SNK Neo Geo Pocket": 1
+ },
+ "dat": "SNK - NeoGeo Pocket (Parent-Clone) (20250904-215533).zip",
+ "families": 12,
+ "files": 14,
+ "zip_MiB": 5.26,
+ "raw_MiB": 13.69,
+ "unique_files_MiB": 11.69,
+ "rows": [
+  {
+   "config": "B8K_C32M",
+   "MiB": 3.07,
+   "unique_MiB": 9.8,
+   "groups": 1,
+   "blocks": 1254,
+   "block_refs": 1752,
+   "meta_MiB_est": 0.174,
+   "s": 4.3,
+   "total_MiB": 3.244
+  },
+  {
+   "config": "B16K_C32M",
+   "MiB": 3.069,
+   "unique_MiB": 9.89,
+   "groups": 1,
+   "blocks": 633,
+   "block_refs": 876,
+   "meta_MiB_est": 0.088,
+   "s": 4.3,
+   "total_MiB": 3.157
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 3.068,
+   "unique_MiB": 10.16,
+   "groups": 1,
+   "blocks": 325,
+   "block_refs": 438,
+   "meta_MiB_est": 0.045,
+   "s": 4.3,
+   "total_MiB": 3.113
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 3.071,
+   "unique_MiB": 10.38,
+   "groups": 1,
+   "blocks": 166,
+   "block_refs": 219,
+   "meta_MiB_est": 0.023,
+   "s": 4.2,
+   "total_MiB": 3.094
+  },
+  {
+   "config": "B128K_C32M",
+   "MiB": 3.07,
+   "unique_MiB": 10.69,
+   "groups": 1,
+   "blocks": 87,
+   "block_refs": 111,
+   "meta_MiB_est": 0.012,
+   "s": 5.1,
+   "total_MiB": 3.082
+  },
+  {
+   "config": "B256K_C32M",
+   "MiB": 3.068,
+   "unique_MiB": 11.69,
+   "groups": 1,
+   "blocks": 49,
+   "block_refs": 57,
+   "meta_MiB_est": 0.006,
+   "s": 5.1,
+   "total_MiB": 3.074
+  },
+  {
+   "config": "B512K_C32M",
+   "MiB": 3.068,
+   "unique_MiB": 11.69,
+   "groups": 1,
+   "blocks": 26,
+   "block_refs": 30,
+   "meta_MiB_est": 0.003,
+   "s": 5.1,
+   "total_MiB": 3.071
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 3.72,
+ "best": "B512K_C32M",
+ "seconds": 19,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B128K_C32M"
+}

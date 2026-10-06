@@ -542,6 +542,98 @@ class GameBoyAdvanceTests(_Base):
         self.assertEqual((self.db.solid_limit, self.db.solid_dict), (B.PLATFORMS['gba']['solid'], B.PLATFORMS['gba']['dictionary']))
 
 
+def sms_rom(size=0x20000, seed=70, offset=0x7FF0, sdsc=False):
+    rom = bytearray(random.Random(seed).randbytes(size))
+    h = bytearray(b'TMR SEGA' + bytes(8)); h[12:14] = bytes([0x34, 0x12]); h[14] = 0x51; h[15] = 0x4F  # product 51234, version 1, export, 128 KiB
+    rom[offset:offset + 16] = h
+    if sdsc:
+        rom[0x7FE0:0x7FF0] = b'SDSC' + bytes([1, 0, 1, 6, 0x26, 0x20]) + bytes(2) + (0x100).to_bytes(2, 'little') + bytes(2)
+        rom[0x100:0x10A] = b'HOMEBREW\x00\x00'
+    if offset == 0x7FF0: rom[offset + 10:offset + 12] = engine.sms_checksum(bytes(rom), 0x20000).to_bytes(2, 'little')
+    return bytes(rom)
+
+
+def ws_rom(size=1 << 20, seed=71, color=1):
+    rom = bytearray(random.Random(seed).randbytes(size))
+    rom[-16:] = bytes([0xEA, 0, 0, 0xFE, 0xFF, 0, 0x24, color, 3, 0, 0x03, 0x20, 0x05, 0x00, 0, 0])
+    rom[-2:] = (sum(rom[:-2]) & 0xFFFF).to_bytes(2, 'little')
+    return bytes(rom)
+
+
+def ngp_rom(size=1 << 20, seed=72, color=0x10):
+    rom = bytearray(random.Random(seed).randbytes(size))
+    rom[:0x40] = b' LICENSED BY SNK CORPORATION' + (0x200040).to_bytes(4, 'little') + (0x0053).to_bytes(2, 'little') + bytes([0, color]) + b'SYNTH POCKET' + bytes(16)
+    return bytes(rom)
+
+
+def pokemini_rom(size=1 << 19, seed=73):
+    rom = bytearray(random.Random(seed).randbytes(size))
+    rom[0x2100:0x2102] = b'MN'; rom[0x21A4:0x21BE] = b'NINTENDO' + b'MZZE' + b'SYNTH MINI\x00\x00' + b'2P'
+    return bytes(rom)
+
+
+class NewCartridgePlatformTests(_Base):
+    """Master System, 32X, WonderSwan, NeoGeo Pocket and Pokemon Mini headers (2026-10-06 platforms)."""
+    platform = 'wswanc'
+
+    def test_sms_header_checksum_and_variants(self):
+        p = engine.parse_sms(sms_rom()); h = p['hardware']
+        self.assertEqual((p['parse_status'], h['header_offset'], h['region'], h['size_declared'], h['product_code'], h['version'], h['checksum_valid']),
+                         ('valid', 0x7FF0, 'SMS Export', 0x20000, '51234', 1, 1))
+        self.assertEqual(engine.parse_sms(sms_rom(offset=0x3FF0))['parse_status'], 'warning')  # export BIOS reads only 0x7FF0
+        self.assertEqual(engine.parse_sms(bytes(0x8000))['parse_status'], 'unclassified')     # Mark III cartridges without header
+        self.assertEqual(engine.parse_sms(sms_rom(sdsc=True))['hardware']['sdsc_title'], 'HOMEBREW')
+        bad = bytearray(sms_rom()); bad[5] ^= 1
+        self.assertIn('declared checksum differs from computed checksum', engine.parse_sms(bytes(bad))['warnings'])
+
+    def test_32x_uses_md_header_and_tolerates_zero_checksum(self):
+        rom = bytearray(md_rom(size=1 << 20, seed=74)); rom[0x100:0x110] = b'SEGA 32X        '; rom[0x3C0:0x3D0] = b'MARS CHECK MODE '
+        rom[0x18E:0x190] = engine.md_checksum(bytes(rom)).to_bytes(2, 'big')
+        p = engine.parse_32x(bytes(rom)); self.assertEqual((p['format'], p['parse_status'], p['table'] if 'table' in p else 'md_hardware'), ('32x', 'valid', 'md_hardware'))
+        rom[0x18E:0x190] = b'\0\0'; rom[0x100:0x110] = b'SEGA MEGA DRIVE '  # many retail 32X cartridges
+        self.assertEqual(engine.parse_32x(bytes(rom))['warnings'], ['no checksum declared (0)'])
+
+    def test_ws_footer_ngp_and_pokemini_headers(self):
+        p = engine.parse_ws(ws_rom()); h = p['hardware']
+        self.assertEqual((p['format'], h['publisher_id'], h['rom_size_declared'], h['save_type'], h['save_size'], h['orientation'], h['bus_width'], h['checksum_valid']),
+                         ('wsc', 0x24, 1 << 20, 'EEPROM', 2048, 'vertical', 8, 1))
+        self.assertEqual(engine.parse_ws(ws_rom(color=0))['format'], 'ws')
+        n = engine.parse_ngp(ngp_rom()); self.assertEqual((n['format'], n['hardware']['licensed'], n['hardware']['title'], n['hardware']['software_id']), ('ngpc', 1, 'SYNTH POCKET', 0x53))
+        self.assertEqual(engine.parse_ngp(bytes(4096))['parse_status'], 'unclassified')  # BIOS / unheadered
+        m = engine.parse_pokemini(pokemini_rom()); self.assertEqual((m['parse_status'], m['hardware']['game_code'], m['hardware']['region_code'], m['hardware']['two_player']), ('valid', 'MZZE', 'E', 1))
+
+    def test_wsc_platform_roundtrip_ra_hash_and_settings(self):
+        a = ws_rom(seed=75); self.solid_import([('W (Japan).wsc', a)])
+        row = self.db.c.execute('SELECT * FROM v_ws_headers').fetchone()
+        self.assertEqual((row['format'], row['color'], row['checksum_valid']), ('wsc', 1, 1))
+        self.assertEqual(self.db.c.execute('SELECT ra_md5 FROM rom_ra_hashes').fetchone()[0], hashlib.md5(a).hexdigest())
+        self.assertEqual((self.db.solid_limit, self.db.solid_dict), (B.PLATFORMS['wswanc']['solid'], B.PLATFORMS['wswanc']['dictionary']))
+        self.assertTrue(self.db.audit(archives=True)['ok'])
+        self.assertEqual(importlib.import_module('import_ra').CONSOLES['wswanc'], importlib.import_module('import_ra').CONSOLES['wswan'])
+
+
+class NormalizeTests(_Base):
+    platform = 'wswan'
+
+    def test_normalize_code_meta_and_idempotence(self):
+        nd = importlib.import_module('normalize_db'); self.db.c.close()
+        c = sqlite3.connect(self.path)
+        with c:  # an old abbreviated code and a stale storage description
+            c.execute("UPDATE platforms SET code='ws'"); c.execute("UPDATE frontend_platforms SET platform_code='ws'")
+            c.execute("UPDATE meta SET value='ws' WHERE key='platform'"); c.execute("UPDATE meta SET value='stale' WHERE key='storage'")
+            c.execute("DELETE FROM meta WHERE key='game_names_extension_version'")
+        c.close()
+        r = nd.normalize(self.path, 'wswan')
+        self.assertEqual(sorted(r['changes']), ['meta.game_names_extension_version', 'meta.platform', 'meta.storage', 'platform_code'])
+        c = sqlite3.connect(self.path); meta = dict(c.execute('SELECT key,value FROM meta'))
+        self.assertEqual((c.execute('SELECT code FROM platforms').fetchone()[0], meta['platform']), ('wswan', 'wswan'))
+        self.assertEqual(meta['storage'], B.storage_text('wswan', B.PLATFORMS['wswan']['block'], B.PLATFORMS['wswan']['solid'], B.PLATFORMS['wswan']['dictionary']))
+        self.assertEqual(c.execute("SELECT count(*) FROM events WHERE action='normalize_db'").fetchone()[0], 1); c.close()
+        self.assertEqual(nd.normalize(self.path)['changes'], {})  # idempotent
+        with self.assertRaises(SystemExit): nd.normalize(self.path, 'ws')  # codes must be Batocera system names
+        self.db = engine.DB(self.path)
+
+
 class RetuneTests(_Base):
     def test_retune_merges_groups_and_keeps_every_identity(self):
         retune = importlib.import_module('retune_db')

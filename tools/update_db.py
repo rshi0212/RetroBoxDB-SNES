@@ -22,16 +22,20 @@ sys.path.insert(0, str(TOOLS))
 import build_db as B  # noqa: E402
 RA_ROOT = pathlib.Path('/mnt/MyShare/RetroAchievements')
 # RetroAchievements-curated ROM sets (hashes as RA lists them; includes hacks, translations and homebrew outside No-Intro).
-RA_FOLDERS = {'nes': ('RA - Nintendo Entertainment System',), 'snes': ('RA - Super Nintendo Entertainment System',), 'megadrive': ('RA - Sega Genesis',),
+RA_FOLDERS = {'nes': ('RA - Nintendo Entertainment System', 'RA - Nintendo Famicom Disk System'), 'snes': ('RA - Super Nintendo Entertainment System',), 'megadrive': ('RA - Sega Genesis',),
               'gb': ('RA - Nintendo Game Boy',), 'gbc': ('RA - Nintendo Game Boy Color',), 'gba': ('RA - Nintendo Game Boy Advance',),
-              # FDS images are in the RA FDS set and also in the RA NES set; Satellaview .bs files are in the RA SNES set.
+              # FDS images are in the RA FDS set and also in the RA NES set, and the RA FDS set holds some NES cartridge
+              # images (FDS conversions, pirate ports): each side imports both folders. Satellaview .bs files are in the RA SNES set.
               'fds': ('RA - Nintendo Famicom Disk System', 'RA - Nintendo Entertainment System'),
-              'satellaview': ('RA - Super Nintendo Entertainment System',)}
+              'satellaview': ('RA - Super Nintendo Entertainment System',),
+              'mastersystem': ('RA - Sega Master System',), 'sega32x': ('RA - Sega 32X',), 'pokemini': ('RA - Nintendo Pokemon Mini',),
+              # One RA set each for WonderSwan + Color and NeoGeo Pocket + Color: each side imports it and skips the other's files.
+              'wswan': ('RA - WonderSwan',), 'wswanc': ('RA - WonderSwan',), 'ngp': ('RA - SNK Neo Geo Pocket',), 'ngpc': ('RA - SNK Neo Geo Pocket',)}
 # Files of another platform found in a folder outside this platform's No-Intro set are skipped and listed in the
 # report: FDS images belong to the FDS database, not NES; Satellaview (BS-X) .bs files to the Satellaview database,
 # not SNES; cartridge files (.nes, .sfc ...) in an RA FDS or SNES folder belong to NES or SNES.
 OTHER_PLATFORM_EXT = {'nes': {'.fds', '.qd'}, 'fds': {'.nes', '.unf', '.unif', '.nsf'}, 'snes': {'.bs'},
-                      'satellaview': {'.sfc', '.smc', '.swc', '.fig'}}
+                      'satellaview': {'.sfc', '.smc', '.swc', '.fig'}, 'wswan': {'.wsc'}, 'wswanc': {'.ws'}, 'ngp': {'.ngc'}, 'ngpc': {'.ngp'}}
 
 
 def log(*a): print(time.strftime('%H:%M:%S'), *a, flush=True)
@@ -155,12 +159,13 @@ def main():
     ap.add_argument('--nointro', type=pathlib.Path, nargs=2, action='append', default=[]); ap.add_argument('--roms', type=pathlib.Path, nargs='*', default=[])
     ap.add_argument('--ra', action='store_true'); ap.add_argument('--names', type=pathlib.Path); ap.add_argument('--discover', action='store_true')
     ap.add_argument('--no-compact', action='store_true'); ap.add_argument('--audit', action='store_true'); ap.add_argument('--catalog', type=pathlib.Path)
-    ap.add_argument('--workers', type=int, default=4)
+    ap.add_argument('--workers', type=int, help="encoder processes (default: the platform's build setting; each holds one group dictionary)")
     args = ap.parse_args(); t0 = time.time()
     work = args.db.resolve().parent / '.build-update'; work.mkdir(exist_ok=True)
     text, _ = B.combined_engine(); (work / 'engine.py').write_text(text); sys.path.insert(0, str(work))
     eng = importlib.import_module('engine'); db = eng.DB(args.db)
     plat = db.platform; cfg = B.PLATFORMS[plat]; report = {'platform': plat, 'started_at': B.datetime_now()}
+    args.workers = args.workers or cfg['workers']
     with db.c:
         report['schema_added'] = ensure_schema(db)
         report['families_backfilled'] = backfill_families(db, eng)

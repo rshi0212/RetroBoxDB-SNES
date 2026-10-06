@@ -5,13 +5,13 @@ class DB(_FullDB):
         super().__init__(path)
         self.c.execute('PRAGMA query_only=ON')
     def stream(self,*args,**kwargs):
-        raise ValueError('Catalog-only database: file content is absent; use populated RetroBoxDB.sqlite')
+        raise ValueError('Catalog-only database: file content is absent; use the populated database RetroBoxDB.<platform>.sqlite')
     def group(self,*args,**kwargs):
         raise ValueError('Catalog-only database: compression group payloads are absent')
     def compact_groups(self,*args,**kwargs):
         raise ValueError('Catalog-only database: cannot compact absent payloads')
     def archive_bytes(self,*args,**kwargs):
-        raise ValueError('Catalog-only database: archive members are absent; use populated RetroBoxDB.sqlite')
+        raise ValueError('Catalog-only database: archive members are absent; use the populated database RetroBoxDB.<platform>.sqlite')
     def stats(self):
         result=super().stats();result['edition']='catalog-only';result['payload_available']=False
         return result

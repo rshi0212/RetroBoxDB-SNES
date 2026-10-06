@@ -1,0 +1,110 @@
+{
+ "prefix": "Nintendo - Pokemon Mini",
+ "sources": {
+  "Nintendo - Pokemon Mini": 48,
+  "Nintendo - Pokemon Mini (Aftermarket)": 2,
+  "RA - Nintendo Pokemon Mini": 51
+ },
+ "dat": "Nintendo - Pokemon Mini (Parent-Clone) (20260529-125415).zip",
+ "families": 57,
+ "files": 101,
+ "zip_MiB": 8.91,
+ "raw_MiB": 35.88,
+ "unique_files_MiB": 27.74,
+ "rows": [
+  {
+   "config": "B4K_C32M",
+   "MiB": 1.51,
+   "unique_MiB": 9.88,
+   "groups": 1,
+   "blocks": 2547,
+   "block_refs": 9204,
+   "meta_MiB_est": 0.57,
+   "s": 4.0,
+   "total_MiB": 2.08
+  },
+  {
+   "config": "B8K_C32M",
+   "MiB": 1.512,
+   "unique_MiB": 11.25,
+   "groups": 1,
+   "blocks": 1456,
+   "block_refs": 4611,
+   "meta_MiB_est": 0.301,
+   "s": 4.3,
+   "total_MiB": 1.813
+  },
+  {
+   "config": "B16K_C32M",
+   "MiB": 1.515,
+   "unique_MiB": 13.18,
+   "groups": 1,
+   "blocks": 860,
+   "block_refs": 2314,
+   "meta_MiB_est": 0.162,
+   "s": 4.5,
+   "total_MiB": 1.677
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 1.517,
+   "unique_MiB": 14.96,
+   "groups": 1,
+   "blocks": 496,
+   "block_refs": 1167,
+   "meta_MiB_est": 0.087,
+   "s": 4.7,
+   "total_MiB": 1.604
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 1.517,
+   "unique_MiB": 17.37,
+   "groups": 1,
+   "blocks": 299,
+   "block_refs": 597,
+   "meta_MiB_est": 0.048,
+   "s": 5.1,
+   "total_MiB": 1.565
+  },
+  {
+   "config": "B128K_C32M",
+   "MiB": 1.518,
+   "unique_MiB": 19.99,
+   "groups": 1,
+   "blocks": 181,
+   "block_refs": 309,
+   "meta_MiB_est": 0.027,
+   "s": 7.2,
+   "total_MiB": 1.545
+  },
+  {
+   "config": "B256K_C32M",
+   "MiB": 1.519,
+   "unique_MiB": 22.99,
+   "groups": 1,
+   "blocks": 117,
+   "block_refs": 170,
+   "meta_MiB_est": 0.017,
+   "s": 7.5,
+   "total_MiB": 1.536
+  },
+  {
+   "config": "B512K_C32M",
+   "MiB": 1.52,
+   "unique_MiB": 27.74,
+   "groups": 1,
+   "blocks": 83,
+   "block_refs": 101,
+   "meta_MiB_est": 0.011,
+   "s": 8.5,
+   "total_MiB": 1.531
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 5.4,
+ "best": "B512K_C32M",
+ "seconds": 25,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B256K_C32M"
+}

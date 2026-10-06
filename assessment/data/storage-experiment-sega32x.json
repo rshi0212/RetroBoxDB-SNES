@@ -1,0 +1,209 @@
+{
+ "prefix": "Sega - 32X",
+ "sources": {
+  "Sega - 32X": 368,
+  "Sega - 32X (Aftermarket)": 7,
+  "RA - Sega 32X": 39
+ },
+ "dat": "Sega - 32X (Parent-Clone) (20260317-140429).zip",
+ "families": 90,
+ "files": 414,
+ "zip_MiB": 593.11,
+ "raw_MiB": 1119.23,
+ "unique_files_MiB": 616.92,
+ "rows": [
+  {
+   "config": "B16K_C32M",
+   "MiB": 90.733,
+   "unique_MiB": 336.04,
+   "groups": 11,
+   "blocks": 21525,
+   "block_refs": 71675,
+   "meta_MiB_est": 4.582,
+   "s": 49.8,
+   "total_MiB": 95.315
+  },
+  {
+   "config": "B16K_C64M",
+   "MiB": 85.539,
+   "unique_MiB": 336.04,
+   "groups": 6,
+   "blocks": 21525,
+   "block_refs": 71675,
+   "meta_MiB_est": 4.582,
+   "s": 62.8,
+   "total_MiB": 90.121
+  },
+  {
+   "config": "B16K_C128M",
+   "MiB": 83.227,
+   "unique_MiB": 336.04,
+   "groups": 3,
+   "blocks": 21525,
+   "block_refs": 71675,
+   "meta_MiB_est": 4.582,
+   "s": 60.4,
+   "total_MiB": 87.809
+  },
+  {
+   "config": "B16K_C256M",
+   "MiB": 81.094,
+   "unique_MiB": 336.04,
+   "groups": 2,
+   "blocks": 21525,
+   "block_refs": 71675,
+   "meta_MiB_est": 4.582,
+   "s": 115.1,
+   "total_MiB": 85.676
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 91.467,
+   "unique_MiB": 345.79,
+   "groups": 11,
+   "blocks": 11084,
+   "block_refs": 35855,
+   "meta_MiB_est": 2.319,
+   "s": 48.3,
+   "total_MiB": 93.786
+  },
+  {
+   "config": "B32K_C64M",
+   "MiB": 85.531,
+   "unique_MiB": 345.79,
+   "groups": 6,
+   "blocks": 11084,
+   "block_refs": 35855,
+   "meta_MiB_est": 2.319,
+   "s": 56.2,
+   "total_MiB": 87.85
+  },
+  {
+   "config": "B32K_C128M",
+   "MiB": 83.727,
+   "unique_MiB": 345.79,
+   "groups": 3,
+   "blocks": 11084,
+   "block_refs": 35855,
+   "meta_MiB_est": 2.319,
+   "s": 55.6,
+   "total_MiB": 86.046
+  },
+  {
+   "config": "B32K_C256M",
+   "MiB": 81.533,
+   "unique_MiB": 345.79,
+   "groups": 2,
+   "blocks": 11084,
+   "block_refs": 35855,
+   "meta_MiB_est": 2.319,
+   "s": 105.1,
+   "total_MiB": 83.852
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 86.954,
+   "unique_MiB": 358.76,
+   "groups": 12,
+   "blocks": 5762,
+   "block_refs": 17951,
+   "meta_MiB_est": 1.179,
+   "s": 52.4,
+   "total_MiB": 88.133
+  },
+  {
+   "config": "B64K_C64M",
+   "MiB": 84.234,
+   "unique_MiB": 358.76,
+   "groups": 6,
+   "blocks": 5762,
+   "block_refs": 17951,
+   "meta_MiB_est": 1.179,
+   "s": 50.3,
+   "total_MiB": 85.413
+  },
+  {
+   "config": "B64K_C128M",
+   "MiB": 82.645,
+   "unique_MiB": 358.76,
+   "groups": 3,
+   "blocks": 5762,
+   "block_refs": 17951,
+   "meta_MiB_est": 1.179,
+   "s": 62.3,
+   "total_MiB": 83.824
+  },
+  {
+   "config": "B64K_C256M",
+   "MiB": 82.498,
+   "unique_MiB": 358.76,
+   "groups": 2,
+   "blocks": 5762,
+   "block_refs": 17951,
+   "meta_MiB_est": 1.179,
+   "s": 117.8,
+   "total_MiB": 83.677
+  },
+  {
+   "config": "B128K_C32M",
+   "MiB": 90.578,
+   "unique_MiB": 380.08,
+   "groups": 12,
+   "blocks": 3060,
+   "block_refs": 8990,
+   "meta_MiB_est": 0.606,
+   "s": 45.1,
+   "total_MiB": 91.184
+  },
+  {
+   "config": "B128K_C64M",
+   "MiB": 86.481,
+   "unique_MiB": 380.08,
+   "groups": 6,
+   "blocks": 3060,
+   "block_refs": 8990,
+   "meta_MiB_est": 0.606,
+   "s": 55.1,
+   "total_MiB": 87.087
+  },
+  {
+   "config": "B128K_C128M",
+   "MiB": 84.491,
+   "unique_MiB": 380.08,
+   "groups": 3,
+   "blocks": 3060,
+   "block_refs": 8990,
+   "meta_MiB_est": 0.606,
+   "s": 57.5,
+   "total_MiB": 85.097
+  },
+  {
+   "config": "B128K_C256M",
+   "MiB": 82.977,
+   "unique_MiB": 380.08,
+   "groups": 2,
+   "blocks": 3060,
+   "block_refs": 8990,
+   "meta_MiB_est": 0.606,
+   "s": 103.0,
+   "total_MiB": 83.583
+  },
+  {
+   "config": "B256K_C256M",
+   "MiB": 83.275,
+   "unique_MiB": 408.7,
+   "groups": 2,
+   "blocks": 1654,
+   "block_refs": 4513,
+   "meta_MiB_est": 0.314,
+   "s": 102.5,
+   "total_MiB": 83.589
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 281.98,
+ "best": "B128K_C256M",
+ "seconds": 1185,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B32K_C256M"
+}

@@ -186,6 +186,55 @@ CREATE VIEW v_bsx_headers AS
  SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.mapping,h.maker_code,h.title,h.broadcast_month,h.broadcast_day,
  h.limited_starts,h.map_mode,h.version,h.checksum_pair_valid
  FROM roms r JOIN objects o ON o.id=r.object_id JOIN bsx_hardware h ON h.rom_id=r.id;
+-- Sega Master System / Mark III 'TMR SEGA' header (0x7FF0, or 0x3FF0/0x1FF0), Codemasters and SDSC headers (0x7FE0).
+CREATE TABLE sms_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ header_offset INTEGER,region_code INTEGER,region TEXT,size_code INTEGER,size_declared INTEGER,product_code TEXT,version INTEGER,
+ checksum_declared INTEGER,checksum_computed INTEGER,checksum_valid INTEGER,codemasters INTEGER NOT NULL,sdsc INTEGER NOT NULL,sdsc_title TEXT,
+ raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+-- Bandai WonderSwan / WonderSwan Color 16-byte footer (both platforms).
+CREATE TABLE ws_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ publisher_id INTEGER NOT NULL,color INTEGER NOT NULL,game_id INTEGER NOT NULL,version INTEGER NOT NULL,rom_size_code INTEGER NOT NULL,rom_size_declared INTEGER,
+ save_type_code INTEGER NOT NULL,save_type TEXT,save_size INTEGER,flags INTEGER NOT NULL,orientation TEXT NOT NULL,bus_width INTEGER NOT NULL,rtc INTEGER NOT NULL,
+ checksum_declared INTEGER NOT NULL,checksum_computed INTEGER NOT NULL,checksum_valid INTEGER NOT NULL,raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+-- SNK NeoGeo Pocket / Pocket Color 64-byte cartridge header (both platforms).
+CREATE TABLE ngp_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ license TEXT NOT NULL,licensed INTEGER NOT NULL,start_address INTEGER NOT NULL,software_id INTEGER NOT NULL,sub_code INTEGER NOT NULL,
+ color_mode INTEGER NOT NULL,color INTEGER NOT NULL,title TEXT,title_hex TEXT NOT NULL,raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+-- Nintendo Pokemon Mini cartridge header at 0x2100.
+CREATE TABLE pokemini_hardware(
+ rom_id INTEGER PRIMARY KEY REFERENCES roms(id),
+ nintendo INTEGER NOT NULL,game_code TEXT,region_code TEXT,title TEXT,title_hex TEXT NOT NULL,two_player INTEGER NOT NULL,
+ raw_json TEXT NOT NULL CHECK(json_valid(raw_json))
+) STRICT;
+CREATE TRIGGER immutable_sms_hardware_update BEFORE UPDATE ON sms_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_sms_hardware_delete BEFORE DELETE ON sms_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_ws_hardware_update BEFORE UPDATE ON ws_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_ws_hardware_delete BEFORE DELETE ON ws_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_ngp_hardware_update BEFORE UPDATE ON ngp_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_ngp_hardware_delete BEFORE DELETE ON ngp_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_pokemini_hardware_update BEFORE UPDATE ON pokemini_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE TRIGGER immutable_pokemini_hardware_delete BEFORE DELETE ON pokemini_hardware BEGIN SELECT RAISE(ABORT,'immutable archival data; create a new version'); END;
+CREATE VIEW v_sms_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.parse_status,printf('%04X',h.header_offset) AS header_offset,h.region,h.size_declared,h.product_code,h.version,
+ printf('%04X',h.checksum_declared) AS checksum_declared,printf('%04X',h.checksum_computed) AS checksum_computed,h.checksum_valid,h.codemasters,h.sdsc,h.sdsc_title
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN sms_hardware h ON h.rom_id=r.id;
+CREATE VIEW v_ws_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.publisher_id,h.color,h.game_id,h.version,h.rom_size_declared,h.save_type,h.save_size,
+ h.orientation,h.bus_width,h.rtc,printf('%04X',h.checksum_declared) AS checksum_declared,printf('%04X',h.checksum_computed) AS checksum_computed,h.checksum_valid
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN ws_hardware h ON h.rom_id=r.id;
+CREATE VIEW v_ngp_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.format,r.parse_status,h.license,h.licensed,printf('%06X',h.start_address) AS start_address,
+ printf('%04X',h.software_id) AS software_id,h.sub_code,h.color,h.title
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN ngp_hardware h ON h.rom_id=r.id;
+CREATE VIEW v_pokemini_headers AS
+ SELECT r.id AS rom_id,o.sha1,o.size,r.parse_status,h.nintendo,h.game_code,h.region_code,h.title,h.two_player
+ FROM roms r JOIN objects o ON o.id=r.object_id JOIN pokemini_hardware h ON h.rom_id=r.id;
 -- DAT diff joins (old/new entry -> release linkage) need both directions indexed.
 CREATE INDEX dat_change_old ON dat_changes(old_dat_rom_id);
 CREATE INDEX dat_change_new ON dat_changes(new_dat_rom_id);
@@ -229,6 +278,97 @@ CREATE VIEW v_information_sources AS
  UNION ALL SELECT 'extended','RetroAchievements',r.fetched_at,r.fetched_at,r.games,'console '||r.console_id||', '||r.hashes||' hashes' FROM ra_snapshots r
  UNION ALL SELECT 'extended','English/Chinese names',i.source_sha256,i.imported_at,(SELECT count(*) FROM game_name_entries e WHERE e.import_id=i.id),i.source_name FROM game_name_imports i
  UNION ALL SELECT 'extended','Documented hardware assertions',NULL,min(created_at),count(*),'from No-Intro serial fields' FROM hardware_assertions
- UNION ALL SELECT 'future','Frontend values (Batocera/ScreenScraper)',NULL,max(updated_at),count(*),'placeholders until scraped' FROM frontend_game_values
+ UNION ALL SELECT 'scraped',CASE s.provider_code WHEN 'launchbox' THEN 'LaunchBox Games Database' ELSE 'ScreenScraper' END,s.source_sha256,s.started_at,
+  (SELECT count(*) FROM provider_snapshot_records x WHERE x.snapshot_id=s.id),s.scope||' '||s.source FROM provider_snapshots s
+ UNION ALL SELECT 'future','Frontend values (Batocera/ScreenScraper)',NULL,max(updated_at),count(*),'local overrides; scraped values are in provider_record_values' FROM frontend_game_values
  UNION ALL SELECT 'future','Frontend media slots',NULL,max(updated_at),count(*),'placeholders until media is stored' FROM frontend_media_slots
  UNION ALL SELECT 'future','Scrape records',NULL,max(fetched_at),count(*),'provider responses' FROM scrape_records;
+
+-- Provider game information (LaunchBox Games Database, ScreenScraper), filled by local tools that are not published.
+-- Local only: the public Catalog keeps these tables with the same structure and no rows.
+-- Deduplicated: identical strings are stored once (scrape_texts); a provider game is stored once per distinct content
+-- (provider_records keyed by content hash, shared by every release/ROM that links to it and by later snapshots); raw
+-- responses are stored once, xz-compressed (scrape_blobs). Per release/ROM only links and check results are stored.
+-- No credentials: ScreenScraper URLs are stored without devid/devpassword/ssid/sspassword, responses without ssuser.
+CREATE TABLE scrape_texts(id INTEGER PRIMARY KEY,sha256 TEXT NOT NULL UNIQUE CHECK(length(sha256)=64),text TEXT NOT NULL) STRICT;
+CREATE TABLE scrape_blobs(
+ sha256 TEXT PRIMARY KEY CHECK(length(sha256)=64),codec TEXT NOT NULL CHECK(codec='xz'),size INTEGER NOT NULL,data BLOB NOT NULL
+) STRICT, WITHOUT ROWID;
+-- LaunchBox: one snapshot per Metadata.zip and platform. ScreenScraper: one snapshot per scraping run.
+CREATE TABLE provider_snapshots(
+ id INTEGER PRIMARY KEY,provider_code TEXT NOT NULL REFERENCES scraper_providers(code),scope TEXT NOT NULL,source TEXT NOT NULL,
+ source_sha256 TEXT,started_at TEXT NOT NULL,finished_at TEXT,details_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(details_json))
+) STRICT;
+CREATE TABLE provider_records(
+ id INTEGER PRIMARY KEY,provider_code TEXT NOT NULL REFERENCES scraper_providers(code),provider_key TEXT NOT NULL,
+ content_sha256 TEXT NOT NULL CHECK(length(content_sha256)=64),raw_sha256 TEXT NOT NULL REFERENCES scrape_blobs(sha256),
+ first_seen_at TEXT NOT NULL,UNIQUE(provider_code,provider_key,content_sha256)
+) STRICT;
+CREATE TABLE provider_snapshot_records(
+ snapshot_id INTEGER NOT NULL REFERENCES provider_snapshots(id),record_id INTEGER NOT NULL REFERENCES provider_records(id),
+ PRIMARY KEY(snapshot_id,record_id)
+) STRICT, WITHOUT ROWID;
+-- Field values of a record: name/alt_name (by region), desc (by language), genre, developer, publisher, releasedate (by region),
+-- players, rating, ... ; text_id points to the shared deduplicated string.
+CREATE TABLE provider_record_values(
+ record_id INTEGER NOT NULL REFERENCES provider_records(id),field TEXT NOT NULL,language TEXT NOT NULL DEFAULT '',
+ region TEXT NOT NULL DEFAULT '',ordinal INTEGER NOT NULL DEFAULT 0,text_id INTEGER NOT NULL REFERENCES scrape_texts(id),
+ PRIMARY KEY(record_id,field,language,region,ordinal)
+) STRICT, WITHOUT ROWID;
+CREATE INDEX provider_value_text ON provider_record_values(text_id);
+-- Media references (no media bytes). locator: LaunchBox image file name, or the ScreenScraper mediaJeu.php query
+-- without credentials; v_scraped_media builds the URL.
+CREATE TABLE provider_record_media(
+ record_id INTEGER NOT NULL REFERENCES provider_records(id),ordinal INTEGER NOT NULL,media_type TEXT NOT NULL,
+ region TEXT NOT NULL DEFAULT '',locator TEXT NOT NULL,crc32 TEXT,md5 TEXT,sha1 TEXT,size INTEGER,format TEXT,
+ PRIMARY KEY(record_id,ordinal)
+) STRICT, WITHOUT ROWID;
+-- Every ROM file ScreenScraper lists for a game (jeu/roms): hash evidence for all local variants without extra requests.
+CREATE TABLE ss_record_roms(
+ record_id INTEGER NOT NULL REFERENCES provider_records(id),ss_rom_id INTEGER NOT NULL,size INTEGER,crc32 TEXT,md5 TEXT,sha1 TEXT,
+ file_name TEXT,flags TEXT NOT NULL DEFAULT '',regions TEXT NOT NULL DEFAULT '',PRIMARY KEY(record_id,ss_rom_id)
+) STRICT, WITHOUT ROWID;
+CREATE INDEX ss_record_rom_sha1 ON ss_record_roms(sha1);
+CREATE INDEX ss_record_rom_md5 ON ss_record_roms(md5);
+CREATE INDEX ss_record_rom_crc ON ss_record_roms(crc32,size);
+-- One row per jeuInfos.php request. outcome: hash_match = the returned game lists a ROM with this file's checksum;
+-- name_fallback = ScreenScraper returned a game by file name although no listed ROM has this checksum (doubtful).
+CREATE TABLE ss_lookups(
+ id INTEGER PRIMARY KEY,snapshot_id INTEGER NOT NULL REFERENCES provider_snapshots(id),
+ sha1 TEXT NOT NULL CHECK(length(sha1)=40),md5 TEXT,crc32 TEXT,size INTEGER NOT NULL,rom_name TEXT NOT NULL,system_id INTEGER NOT NULL,
+ account TEXT NOT NULL,requested_at TEXT NOT NULL,http_status INTEGER,
+ outcome TEXT NOT NULL CHECK(outcome IN ('hash_match','name_fallback','not_found','error')),
+ record_id INTEGER REFERENCES provider_records(id),ss_game_id INTEGER,ss_rom_id INTEGER,message TEXT,
+ CHECK((outcome IN ('hash_match','name_fallback'))=(record_id IS NOT NULL))
+) STRICT;
+CREATE INDEX ss_lookup_sha1 ON ss_lookups(sha1);
+-- Cross-check of all sources per subject (a release, or a local ROM file without a release).
+-- severity: ok = sources agree; info = one source, no contradiction; doubtful = needs review; error = contradiction.
+CREATE TABLE scrape_checks(
+ subject_kind TEXT NOT NULL CHECK(subject_kind IN ('release','rom')),subject_id INTEGER NOT NULL,title TEXT NOT NULL,
+ verdict TEXT NOT NULL,severity TEXT NOT NULL CHECK(severity IN ('ok','info','doubtful','error','pending')),
+ accepted TEXT CHECK(accepted IN ('screenscraper','launchbox')),
+ ss_game_id INTEGER,ss_method TEXT,lb_database_id INTEGER,lb_method TEXT,flags TEXT NOT NULL DEFAULT '',
+ details_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(details_json)),checked_at TEXT NOT NULL,
+ PRIMARY KEY(subject_kind,subject_id)
+) STRICT, WITHOUT ROWID;
+CREATE INDEX scrape_check_verdict ON scrape_checks(severity,verdict);
+CREATE VIEW v_provider_latest_records AS
+ SELECT r.* FROM provider_records r WHERE r.id=(SELECT max(x.id) FROM provider_records x WHERE x.provider_code=r.provider_code AND x.provider_key=r.provider_key);
+CREATE VIEW v_provider_record_values AS
+ SELECT r.provider_code,r.provider_key,v.record_id,v.field,v.language,v.region,v.ordinal,t.text AS value
+ FROM provider_record_values v JOIN provider_records r ON r.id=v.record_id JOIN scrape_texts t ON t.id=v.text_id;
+CREATE VIEW v_scraped_media AS
+ SELECT r.provider_code,r.provider_key,m.record_id,m.ordinal,m.media_type,m.region,m.format,m.size,m.crc32,m.md5,m.sha1,
+ CASE r.provider_code WHEN 'launchbox' THEN 'https://images.launchbox-app.com/'||m.locator
+  ELSE 'https://neoclone.screenscraper.fr/api2/mediaJeu.php?'||m.locator END AS url_without_credentials
+ FROM provider_record_media m JOIN provider_records r ON r.id=m.record_id;
+-- Scraped values per subject from the source the cross-check accepted (accepted is NULL for doubtful/error subjects),
+-- latest record of that game. Values are read from the shared records, never copied per release.
+CREATE VIEW v_subject_scraped_values AS
+ SELECT c.subject_kind,c.subject_id,c.title,c.severity,c.verdict,v.provider_code,v.provider_key,v.field,v.language,v.region,v.ordinal,v.value
+ FROM scrape_checks c JOIN v_provider_latest_records r ON r.provider_code=c.accepted
+  AND r.provider_key=CAST(CASE c.accepted WHEN 'screenscraper' THEN c.ss_game_id ELSE c.lb_database_id END AS TEXT)
+ JOIN v_provider_record_values v ON v.record_id=r.id;
+CREATE VIEW v_scrape_check_summary AS
+ SELECT subject_kind,severity,verdict,count(*) AS subjects FROM scrape_checks GROUP BY 1,2,3;

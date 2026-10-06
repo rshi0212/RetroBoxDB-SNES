@@ -73,6 +73,8 @@ def retune(db_path, group_mib, workers=None, dry_run=False, eng=None):
         for n in triggers: c.execute('DROP TRIGGER ' + n)
         for k, v in (('solid_group_max_bytes', cap), ('solid_group_dictionary_bytes', cap), ('solid_group_cache_bytes', max(96 << 20, 2 * cap))):
             c.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', (k, str(v)))
+        block = int(c.execute("SELECT value FROM meta WHERE key='rom_block_size'").fetchone()[0])
+        c.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', ('storage', B.storage_text(db.platform, block, cap, cap)))  # keep the description in step
         new_db_filters = eng.solid_filters(cap)
         pending = collections.deque(); done = 0
 

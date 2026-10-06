@@ -1,0 +1,219 @@
+{
+ "prefix": "SNK - NeoGeo Pocket Color",
+ "sources": {
+  "SNK - NeoGeo Pocket Color": 130,
+  "RA - SNK Neo Geo Pocket": 53
+ },
+ "dat": "SNK - NeoGeo Pocket Color (Parent-Clone) (20260919-122044).zip",
+ "families": 95,
+ "files": 183,
+ "zip_MiB": 92.97,
+ "raw_MiB": 261.82,
+ "unique_files_MiB": 226.32,
+ "rows": [
+  {
+   "config": "B8K_C32M",
+   "MiB": 34.439,
+   "unique_MiB": 135.04,
+   "groups": 5,
+   "blocks": 17288,
+   "block_refs": 33515,
+   "meta_MiB_est": 2.762,
+   "s": 19.4,
+   "total_MiB": 37.201
+  },
+  {
+   "config": "B8K_C64M",
+   "MiB": 33.768,
+   "unique_MiB": 135.04,
+   "groups": 3,
+   "blocks": 17288,
+   "block_refs": 33515,
+   "meta_MiB_est": 2.762,
+   "s": 34.5,
+   "total_MiB": 36.53
+  },
+  {
+   "config": "B8K_C128M",
+   "MiB": 33.352,
+   "unique_MiB": 135.04,
+   "groups": 2,
+   "blocks": 17288,
+   "block_refs": 33515,
+   "meta_MiB_est": 2.762,
+   "s": 69.5,
+   "total_MiB": 36.114
+  },
+  {
+   "config": "B8K_C256M",
+   "MiB": 32.802,
+   "unique_MiB": 135.04,
+   "groups": 1,
+   "blocks": 17288,
+   "block_refs": 33515,
+   "meta_MiB_est": 2.762,
+   "s": 76.2,
+   "total_MiB": 35.564
+  },
+  {
+   "config": "B16K_C32M",
+   "MiB": 34.208,
+   "unique_MiB": 138.11,
+   "groups": 5,
+   "blocks": 8842,
+   "block_refs": 16759,
+   "meta_MiB_est": 1.398,
+   "s": 20.6,
+   "total_MiB": 35.606
+  },
+  {
+   "config": "B16K_C64M",
+   "MiB": 33.963,
+   "unique_MiB": 138.11,
+   "groups": 3,
+   "blocks": 8842,
+   "block_refs": 16759,
+   "meta_MiB_est": 1.398,
+   "s": 34.1,
+   "total_MiB": 35.361
+  },
+  {
+   "config": "B16K_C128M",
+   "MiB": 33.549,
+   "unique_MiB": 138.11,
+   "groups": 2,
+   "blocks": 8842,
+   "block_refs": 16759,
+   "meta_MiB_est": 1.398,
+   "s": 65.6,
+   "total_MiB": 34.947
+  },
+  {
+   "config": "B16K_C256M",
+   "MiB": 32.807,
+   "unique_MiB": 138.11,
+   "groups": 1,
+   "blocks": 8842,
+   "block_refs": 16759,
+   "meta_MiB_est": 1.398,
+   "s": 69.5,
+   "total_MiB": 34.205
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 34.515,
+   "unique_MiB": 142.82,
+   "groups": 5,
+   "blocks": 4573,
+   "block_refs": 8381,
+   "meta_MiB_est": 0.712,
+   "s": 22.3,
+   "total_MiB": 35.227
+  },
+  {
+   "config": "B32K_C64M",
+   "MiB": 34.166,
+   "unique_MiB": 142.82,
+   "groups": 3,
+   "blocks": 4573,
+   "block_refs": 8381,
+   "meta_MiB_est": 0.712,
+   "s": 33.5,
+   "total_MiB": 34.878
+  },
+  {
+   "config": "B32K_C128M",
+   "MiB": 33.728,
+   "unique_MiB": 142.82,
+   "groups": 2,
+   "blocks": 4573,
+   "block_refs": 8381,
+   "meta_MiB_est": 0.712,
+   "s": 68.4,
+   "total_MiB": 34.44
+  },
+  {
+   "config": "B32K_C256M",
+   "MiB": 32.807,
+   "unique_MiB": 142.82,
+   "groups": 1,
+   "blocks": 4573,
+   "block_refs": 8381,
+   "meta_MiB_est": 0.712,
+   "s": 72.8,
+   "total_MiB": 33.519
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 35.444,
+   "unique_MiB": 148.88,
+   "groups": 5,
+   "blocks": 2387,
+   "block_refs": 4194,
+   "meta_MiB_est": 0.365,
+   "s": 26.0,
+   "total_MiB": 35.809
+  },
+  {
+   "config": "B64K_C64M",
+   "MiB": 34.898,
+   "unique_MiB": 148.88,
+   "groups": 3,
+   "blocks": 2387,
+   "block_refs": 4194,
+   "meta_MiB_est": 0.365,
+   "s": 32.9,
+   "total_MiB": 35.263
+  },
+  {
+   "config": "B64K_C128M",
+   "MiB": 34.173,
+   "unique_MiB": 148.88,
+   "groups": 2,
+   "blocks": 2387,
+   "block_refs": 4194,
+   "meta_MiB_est": 0.365,
+   "s": 66.0,
+   "total_MiB": 34.538
+  },
+  {
+   "config": "B64K_C256M",
+   "MiB": 32.814,
+   "unique_MiB": 148.88,
+   "groups": 1,
+   "blocks": 2387,
+   "block_refs": 4194,
+   "meta_MiB_est": 0.365,
+   "s": 79.3,
+   "total_MiB": 33.179
+  },
+  {
+   "config": "B128K_C256M",
+   "MiB": 32.828,
+   "unique_MiB": 157.69,
+   "groups": 1,
+   "blocks": 1268,
+   "block_refs": 2101,
+   "meta_MiB_est": 0.189,
+   "s": 90.4,
+   "total_MiB": 33.017
+  },
+  {
+   "config": "B256K_C256M",
+   "MiB": 32.835,
+   "unique_MiB": 172.82,
+   "groups": 1,
+   "blocks": 699,
+   "block_refs": 1055,
+   "meta_MiB_est": 0.1,
+   "s": 89.9,
+   "total_MiB": 32.935
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 64.83,
+ "best": "B256K_C256M",
+ "seconds": 812,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B128K_C256M"
+}

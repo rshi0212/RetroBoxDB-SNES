@@ -1,4 +1,4 @@
-"""SNES and Mega Drive internal-header parsers. Python >=3.10, stdlib only.
+"""Cartridge / disk header parsers (SNES, Mega Drive, GB, GBC, GBA, FDS, Satellaview, SMS, 32X, WonderSwan, NeoGeo Pocket, Pokemon Mini). Python >=3.10, stdlib only.
 
 Parsing is descriptive: the stored file bytes are never modified, and a header
 declaration is evidence about the dump, not proof of physical cartridge hardware.
@@ -385,4 +385,143 @@ def parse_bsx(data):
     return out
 
 
-PARSERS = {'snes': parse_snes, 'megadrive': parse_md, 'gb': parse_gb, 'gbc': parse_gb, 'gba': parse_gba, 'fds': parse_fds, 'satellaview': parse_bsx}
+# ---------------------------------------------------------------- Sega Master System / Mark III
+
+SMS_HEADER_OFFSETS = (0x7FF0, 0x3FF0, 0x1FF0)
+SMS_REGIONS = {0x3: 'SMS Japan', 0x4: 'SMS Export', 0x5: 'GG Japan', 0x6: 'GG Export', 0x7: 'GG International'}
+SMS_SIZES = {0xA: 0x2000, 0xB: 0x4000, 0xC: 0x8000, 0xD: 0xC000, 0xE: 0x10000, 0xF: 0x20000, 0x0: 0x40000, 0x1: 0x80000, 0x2: 0x100000}
+
+
+def sms_checksum(data, size):
+    """Export BIOS checksum over the declared range: the 16 bytes before 0x8000 (header area) are excluded."""
+    return (sum(data[0:min(size, 0x8000) - 16]) + sum(data[0x8000:size])) & 0xFFFF
+
+
+def _sms_bcd(b): return ''.join(f'{x:02x}' for x in b)
+
+
+def parse_sms(data):
+    """'TMR SEGA' header (SMS Power): checksum, product code, version, region and declared size; Codemasters (0x7FE0)
+    and SDSC homebrew (0x7FE0) headers when present. Japanese Mark III cartridges usually have no header. Descriptive only."""
+    out = dict(format='sms', parse_status='unclassified', components=[('file', 0, len(data))] if data else [], hardware=None, warnings=[])
+    off = next((o for o in SMS_HEADER_OFFSETS if data[o:o + 8] == b'TMR SEGA'), None)
+    cm = data[0x7FE0:0x7FF0] if len(data) >= 0x8000 else b''
+    codemasters = len(cm) == 16 and (int.from_bytes(cm[6:8], 'little') + int.from_bytes(cm[8:10], 'little')) & 0xFFFF == 0 and cm[0] > 0 and 0x01 <= cm[2] <= 0x12 and cm[6:10] != bytes(4)
+    sdsc = cm[:4] == b'SDSC'
+    if off is None and not sdsc:
+        out['warnings'].append('no TMR SEGA header (usual for Japanese Mark III cartridges)'); return out
+    h = data[off:off + 16] if off is not None else b''
+    hw = dict(header_offset=off, region_code=h[15] >> 4 if h else None, region=SMS_REGIONS.get(h[15] >> 4) if h else None,
+              size_code=h[15] & 0xF if h else None, size_declared=SMS_SIZES.get(h[15] & 0xF) if h else None,
+              product_code=(f'{h[14] >> 4:x}' if h and h[14] >> 4 else '') + _sms_bcd(h[12:14][::-1]) if h else None, version=h[14] & 0xF if h else None,
+              checksum_declared=int.from_bytes(h[10:12], 'little') if h else None, checksum_computed=None, checksum_valid=None,
+              codemasters=int(bool(codemasters)), sdsc=int(sdsc), sdsc_title=None,
+              raw_json=_js({'parser': PARSER_VERSION, 'tmr_sega_hex': h.hex(), 'area_7fe0_hex': cm.hex(),
+                            'interpretation': 'header declarations; mapper and region lockout hardware require external evidence'}))
+    if hw['size_declared'] and hw['size_declared'] <= len(data):
+        hw['checksum_computed'] = sms_checksum(data, hw['size_declared']); hw['checksum_valid'] = int(hw['checksum_computed'] == hw['checksum_declared'])
+    if sdsc:
+        ptr = int.from_bytes(cm[12:14], 'little')
+        if ptr not in (0, 0xFFFF) and ptr < len(data):
+            end = data.find(b'\0', ptr, ptr + 256); hw['sdsc_title'] = _text(data[ptr:end if end > 0 else ptr + 64])
+    out.update(hardware=hw, parse_status='valid')
+    if off is None: out['warnings'].append('SDSC header without TMR SEGA header')
+    elif off != 0x7FF0: out['warnings'].append(f'header at {off:#06x}; the export BIOS reads only 0x7FF0')
+    if hw['size_declared'] is None and h: out['warnings'].append('undefined ROM size code')
+    elif hw['size_declared'] and hw['size_declared'] > len(data): out['warnings'].append('declared size larger than the file')
+    if hw['checksum_valid'] == 0: out['warnings'].append('declared checksum differs from computed checksum')
+    if out['warnings']: out['parse_status'] = 'warning'
+    return out
+
+
+# ---------------------------------------------------------------- Sega 32X (Mega Drive cartridge header)
+
+def parse_32x(data):
+    """32X cartridges carry a Mega Drive header (system 'SEGA 32X', or 'SEGA MEGA DRIVE' / 'SEGA GENESIS' on many retail
+    cartridges); the MARS security block follows at 0x3C0. Many cartridges declare no checksum (0)."""
+    p = parse_md(data)
+    hw = p['hardware']
+    if hw and hw['checksum_declared'] == 0 and 'declared checksum differs from computed checksum' in p['warnings']:
+        p['warnings'] = [w if w != 'declared checksum differs from computed checksum' else 'no checksum declared (0)' for w in p['warnings']]
+    if hw and data[0x3C0:0x3D0] != b'MARS CHECK MODE ': p['warnings'].append('no MARS security header at 0x3C0')
+    if p['parse_status'] == 'valid' and p['warnings']: p['parse_status'] = 'warning'
+    if p['format'] == 'md': p['format'] = '32x'
+    return p
+
+
+# ---------------------------------------------------------------- Bandai WonderSwan / WonderSwan Color
+
+WS_ROM_SIZES = {0x00: 1 << 17, 0x01: 1 << 18, 0x02: 1 << 19, 0x03: 1 << 20, 0x04: 1 << 21, 0x05: 3 << 20, 0x06: 1 << 22,
+                0x07: 6 << 20, 0x08: 1 << 23, 0x09: 1 << 24}
+WS_SAVES = {0x00: ('none', 0), 0x01: ('SRAM', 8192), 0x02: ('SRAM', 32768), 0x03: ('SRAM', 131072), 0x04: ('SRAM', 262144),
+            0x05: ('SRAM', 524288), 0x10: ('EEPROM', 128), 0x20: ('EEPROM', 2048), 0x50: ('EEPROM', 1024)}
+
+
+def parse_ws(data):
+    """16-byte footer at the end of the image (jump, maintenance, publisher, colour flag, game id, version, ROM size,
+    save type, flags, RTC, 16-bit checksum of all other bytes). Descriptive only."""
+    out = dict(format='ws', parse_status='unclassified', components=[], hardware=None, warnings=[])
+    if len(data) < 0x10000:
+        out['warnings'].append('file shorter than one 64 KiB bank')
+        if data: out['components'].append(('file', 0, len(data)))
+        return out
+    out['components'] += [('program', 0, len(data) - 16), ('footer', len(data) - 16, 16)]
+    f = data[-16:]
+    if f[0] != 0xEA:
+        out['components'] = [('file', 0, len(data))]; out['warnings'].append('no far-jump at the start of the footer'); return out
+    save = WS_SAVES.get(f[11]); declared = int.from_bytes(f[14:16], 'little'); computed = sum(data[:-2]) & 0xFFFF
+    out['format'] = 'wsc' if f[7] & 1 else 'ws'
+    hw = dict(publisher_id=f[6], color=f[7] & 1, game_id=f[8], version=f[9], rom_size_code=f[10], rom_size_declared=WS_ROM_SIZES.get(f[10]),
+              save_type_code=f[11], save_type=save[0] if save else None, save_size=save[1] if save else None, flags=f[12],
+              orientation='vertical' if f[12] & 1 else 'horizontal', bus_width=8 if f[12] & 4 else 16, rtc=f[13] & 1,
+              checksum_declared=declared, checksum_computed=computed, checksum_valid=int(declared == computed),
+              raw_json=_js({'parser': PARSER_VERSION, 'footer_hex': f.hex(), 'interpretation': 'footer declaration; save chip and RTC hardware require external evidence'}))
+    out.update(hardware=hw, parse_status='valid')
+    if declared != computed: out['warnings'].append('declared checksum differs from computed checksum')
+    if hw['rom_size_declared'] and hw['rom_size_declared'] != len(data): out['warnings'].append('declared ROM size differs from file size')
+    if save is None: out['warnings'].append(f'unknown save type {f[11]:#04x}')
+    if out['warnings']: out['parse_status'] = 'warning'
+    return out
+
+
+# ---------------------------------------------------------------- SNK NeoGeo Pocket / Pocket Color
+
+NGP_LICENSES = (b'COPYRIGHT BY SNK CORPORATION', b' LICENSED BY SNK CORPORATION')
+
+
+def parse_ngp(data):
+    """64-byte cartridge header at 0: licence string, start address, software id, sub code, colour mode, title."""
+    out = dict(format='ngp', parse_status='unclassified', components=[('file', 0, len(data))] if data else [], hardware=None, warnings=[])
+    if len(data) < 0x40 or data[:28] not in NGP_LICENSES:
+        out['warnings'].append('no SNK licence string at 0 (BIOS or unheadered file)'); return out
+    out['components'] = [('header', 0, 0x40), ('program', 0x40, len(data) - 0x40)]
+    color = data[0x23]
+    out['format'] = 'ngpc' if color == 0x10 else 'ngp'
+    hw = dict(license=_text(data[:28]), licensed=int(data[:28] == NGP_LICENSES[1]), start_address=int.from_bytes(data[0x1C:0x20], 'little'),
+              software_id=int.from_bytes(data[0x20:0x22], 'little'), sub_code=data[0x22], color_mode=color, color=int(color == 0x10),
+              title=_text(data[0x24:0x30]), title_hex=data[0x24:0x30].hex(),
+              raw_json=_js({'parser': PARSER_VERSION, 'header_hex': data[:0x40].hex(), 'interpretation': 'cartridge header declaration'}))
+    out.update(hardware=hw, parse_status='valid')
+    if color not in (0x00, 0x10): out['warnings'].append(f'unknown colour mode {color:#04x}'); out['parse_status'] = 'warning'
+    return out
+
+
+# ---------------------------------------------------------------- Nintendo Pokemon Mini
+
+def parse_pokemini(data):
+    """Cartridge header at 0x2100: 'MN', interrupt vectors, 'NINTENDO', 4-character game code, 12-byte title, '2P'."""
+    out = dict(format='min', parse_status='unclassified', components=[('file', 0, len(data))] if data else [], hardware=None, warnings=[])
+    if len(data) < 0x21D0 or data[0x2100:0x2102] != b'MN':
+        out['warnings'].append('no MN header at 0x2100'); return out
+    out['components'] = [('reserved', 0, 0x2100), ('header', 0x2100, 0xD0), ('program', 0x21D0, len(data) - 0x21D0)]
+    code = data[0x21AC:0x21B0]
+    hw = dict(nintendo=int(data[0x21A4:0x21AC] == b'NINTENDO'), game_code=_text(code), region_code=chr(code[3]) if 0x41 <= code[3] <= 0x5A else None,
+              title=_text(data[0x21B0:0x21BC]), title_hex=data[0x21B0:0x21BC].hex(), two_player=int(data[0x21BC:0x21BE] == b'2P'),
+              raw_json=_js({'parser': PARSER_VERSION, 'header_hex': data[0x21A4:0x21D0].hex(), 'interpretation': 'cartridge header declaration'}))
+    out.update(hardware=hw, parse_status='valid')
+    if not hw['nintendo']: out['warnings'].append('NINTENDO string missing'); out['parse_status'] = 'warning'
+    return out
+
+
+PARSERS = {'snes': parse_snes, 'megadrive': parse_md, 'gb': parse_gb, 'gbc': parse_gb, 'gba': parse_gba, 'fds': parse_fds, 'satellaview': parse_bsx,
+           'mastersystem': parse_sms, 'sega32x': parse_32x, 'wswan': parse_ws, 'wswanc': parse_ws, 'ngp': parse_ngp, 'ngpc': parse_ngp, 'pokemini': parse_pokemini}

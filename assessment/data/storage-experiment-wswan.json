@@ -1,0 +1,219 @@
+{
+ "prefix": "Bandai - WonderSwan",
+ "sources": {
+  "Bandai - WonderSwan": 258,
+  "RA - WonderSwan": 29
+ },
+ "dat": "Bandai - WonderSwan (Parent-Clone) (20260525-011654).zip",
+ "families": 236,
+ "files": 287,
+ "zip_MiB": 150.46,
+ "raw_MiB": 383.0,
+ "unique_files_MiB": 334.5,
+ "rows": [
+  {
+   "config": "B8K_C32M",
+   "MiB": 76.411,
+   "unique_MiB": 182.16,
+   "groups": 6,
+   "blocks": 23317,
+   "block_refs": 49025,
+   "meta_MiB_est": 3.871,
+   "s": 41.5,
+   "total_MiB": 80.282
+  },
+  {
+   "config": "B8K_C64M",
+   "MiB": 76.168,
+   "unique_MiB": 182.16,
+   "groups": 3,
+   "blocks": 23317,
+   "block_refs": 49025,
+   "meta_MiB_est": 3.871,
+   "s": 42.7,
+   "total_MiB": 80.039
+  },
+  {
+   "config": "B8K_C128M",
+   "MiB": 76.043,
+   "unique_MiB": 182.16,
+   "groups": 2,
+   "blocks": 23317,
+   "block_refs": 49025,
+   "meta_MiB_est": 3.871,
+   "s": 85.1,
+   "total_MiB": 79.914
+  },
+  {
+   "config": "B8K_C256M",
+   "MiB": 75.397,
+   "unique_MiB": 182.16,
+   "groups": 1,
+   "blocks": 23317,
+   "block_refs": 49025,
+   "meta_MiB_est": 3.871,
+   "s": 122.7,
+   "total_MiB": 79.268
+  },
+  {
+   "config": "B16K_C32M",
+   "MiB": 77.492,
+   "unique_MiB": 189.47,
+   "groups": 6,
+   "blocks": 12127,
+   "block_refs": 24513,
+   "meta_MiB_est": 1.976,
+   "s": 32.3,
+   "total_MiB": 79.468
+  },
+  {
+   "config": "B16K_C64M",
+   "MiB": 77.116,
+   "unique_MiB": 189.47,
+   "groups": 3,
+   "blocks": 12127,
+   "block_refs": 24513,
+   "meta_MiB_est": 1.976,
+   "s": 35.4,
+   "total_MiB": 79.092
+  },
+  {
+   "config": "B16K_C128M",
+   "MiB": 76.993,
+   "unique_MiB": 189.47,
+   "groups": 2,
+   "blocks": 12127,
+   "block_refs": 24513,
+   "meta_MiB_est": 1.976,
+   "s": 77.2,
+   "total_MiB": 78.969
+  },
+  {
+   "config": "B16K_C256M",
+   "MiB": 75.421,
+   "unique_MiB": 189.47,
+   "groups": 1,
+   "blocks": 12127,
+   "block_refs": 24513,
+   "meta_MiB_est": 1.976,
+   "s": 117.4,
+   "total_MiB": 77.397
+  },
+  {
+   "config": "B32K_C32M",
+   "MiB": 77.733,
+   "unique_MiB": 197.97,
+   "groups": 7,
+   "blocks": 6336,
+   "block_refs": 12257,
+   "meta_MiB_est": 1.011,
+   "s": 34.1,
+   "total_MiB": 78.744
+  },
+  {
+   "config": "B32K_C64M",
+   "MiB": 77.172,
+   "unique_MiB": 197.97,
+   "groups": 4,
+   "blocks": 6336,
+   "block_refs": 12257,
+   "meta_MiB_est": 1.011,
+   "s": 38.3,
+   "total_MiB": 78.183
+  },
+  {
+   "config": "B32K_C128M",
+   "MiB": 76.991,
+   "unique_MiB": 197.97,
+   "groups": 2,
+   "blocks": 6336,
+   "block_refs": 12257,
+   "meta_MiB_est": 1.011,
+   "s": 77.9,
+   "total_MiB": 78.002
+  },
+  {
+   "config": "B32K_C256M",
+   "MiB": 75.436,
+   "unique_MiB": 197.97,
+   "groups": 1,
+   "blocks": 6336,
+   "block_refs": 12257,
+   "meta_MiB_est": 1.011,
+   "s": 122.9,
+   "total_MiB": 76.447
+  },
+  {
+   "config": "B64K_C32M",
+   "MiB": 77.37,
+   "unique_MiB": 208.07,
+   "groups": 7,
+   "blocks": 3330,
+   "block_refs": 6129,
+   "meta_MiB_est": 0.52,
+   "s": 32.2,
+   "total_MiB": 77.89
+  },
+  {
+   "config": "B64K_C64M",
+   "MiB": 76.989,
+   "unique_MiB": 208.07,
+   "groups": 4,
+   "blocks": 3330,
+   "block_refs": 6129,
+   "meta_MiB_est": 0.52,
+   "s": 36.8,
+   "total_MiB": 77.509
+  },
+  {
+   "config": "B64K_C128M",
+   "MiB": 76.846,
+   "unique_MiB": 208.07,
+   "groups": 2,
+   "blocks": 3330,
+   "block_refs": 6129,
+   "meta_MiB_est": 0.52,
+   "s": 74.3,
+   "total_MiB": 77.366
+  },
+  {
+   "config": "B64K_C256M",
+   "MiB": 75.455,
+   "unique_MiB": 208.07,
+   "groups": 1,
+   "blocks": 3330,
+   "block_refs": 6129,
+   "meta_MiB_est": 0.52,
+   "s": 124.0,
+   "total_MiB": 75.975
+  },
+  {
+   "config": "B128K_C256M",
+   "MiB": 75.469,
+   "unique_MiB": 223.63,
+   "groups": 1,
+   "blocks": 1790,
+   "block_refs": 3065,
+   "meta_MiB_est": 0.271,
+   "s": 140.4,
+   "total_MiB": 75.74
+  },
+  {
+   "config": "B256K_C256M",
+   "MiB": 75.49,
+   "unique_MiB": 249.0,
+   "groups": 1,
+   "blocks": 997,
+   "block_refs": 1533,
+   "meta_MiB_est": 0.144,
+   "s": 142.0,
+   "total_MiB": 75.634
+  }
+ ],
+ "method": "Whole local collection (no sample); families from the newest Parent-Clone DAT; storage-v4 group encoder settings",
+ "per_file_lzma_MiB": 100.84,
+ "best": "B256K_C256M",
+ "seconds": 1123,
+ "decision_rule": "smallest total_MiB; among configurations within 0.5% of it, the smallest block, then the smallest group cap",
+ "chosen": "B64K_C256M"
+}

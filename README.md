@@ -7,7 +7,7 @@ Single-file SQLite preservation database for Super Nintendo Entertainment System
 | Item | Value |
 | --- | --- |
 | Original size | 6,734 source ZIPs, 6.06 GiB (No-Intro 4,898, RetroAchievements sets 1,836); 6,734 ROM files, 10.90 GiB uncompressed |
-| Stored size | populated database 1.76 GiB; public Catalog 53.7 MiB (no ROM data) |
+| Stored size | populated database 1.76 GiB; public Catalog 54.0 MiB (no ROM data) |
 | Ratio | 29.1% of the source ZIPs, 16.2% of the uncompressed ROM files |
 | Technology | storage v4: SHA256-deduplicated 64 KiB blocks packed in No-Intro family order into solid LZMA2 groups of up to 128 MiB (128 MiB dictionary); per-block SHA256 and per-object CRC32/MD5/SHA1/SHA256 verification; source ZIPs reproduced byte-for-byte from TorrentZip plans |
 | Export performance | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, idle, Python 3.14.4, all checks included. whole newest-DAT set with `export_set.py` (4,261 files, each checked against the DAT hashes): 28.0 MiB/s, 52 ms per file on average; single file with a cold cache (the group is decoded up to the file): ROM 1.094 s, TorrentZip 1.397 s on average |
@@ -17,7 +17,7 @@ Single-file SQLite preservation database for Super Nintendo Entertainment System
 | File / document | Content |
 | --- | --- |
 | [RetroBoxDB.SNES.Catalog.sqlite](https://github.com/rshi0212/RetroBoxDB-SNES/releases/latest/download/RetroBoxDB.SNES.Catalog.sqlite) | Public Catalog (Release asset with `SHA256SUMS`) |
-| [Storage v4 guide](RetroBoxDB.Storage-v4.en.md) / [中文](RetroBoxDB.Storage-v4.zh-CN.md) | Storage evaluation, contents, RA, names and maintenance for all eight platforms |
+| [Storage v4 guide](RetroBoxDB.Storage-v4.en.md) / [中文](RetroBoxDB.Storage-v4.zh-CN.md) | Storage evaluation, contents, RA, names and maintenance for every platform |
 | [Technical design](RetroBoxDB.Storage-v4.Technical-Design.en.md) | Storage format, platform adapters, incremental updates, verification |
 | [RA list](reports/ra-snes-games.csv) / [summary](reports/ra-snes.json), [build report](reports/snes-build-report.json), [audit resolution](reports/audit-resolution-20261004.md) | Detailed data |
 

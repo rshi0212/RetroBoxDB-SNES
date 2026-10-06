@@ -20,6 +20,7 @@ DOCS = {'README.zh-CN': ('markdown', 'RetroBoxDB.Storage-v4.zh-CN.md'),
         'storage-experiment-gb-gbc-gba': ('json', 'assessment/data/storage-experiment-gb-gbc-gba.json'),
         'storage-experiment-fds': ('json', 'assessment/data/storage-experiment-fds.json'),
         'storage-experiment-satellaview': ('json', 'assessment/data/storage-experiment-satellaview.json'),
+        **{f'storage-experiment-{p}': ('json', f'assessment/data/storage-experiment-{p}.json') for p in ('mastersystem', 'sega32x', 'wswan', 'wswanc', 'ngp', 'ngpc', 'pokemini')},
         'storage-curves': ('json', 'assessment/data/storage-curves.json'),
         'audit-resolution': ('markdown', 'reports/audit-resolution-20261004.md')}
 # NES keeps its own README, its v3 design as history, and its `schema.sql` resource (the v3 fixture schema its embedded
@@ -31,20 +32,26 @@ NES_DOCS = {'README.en': ('markdown', 'README.md'), 'README.zh-CN': ('markdown',
             'documentation-index': ('json', 'release/documentation-index.json'),
             'storage-experiment-nes': ('json', 'assessment/data/storage-experiment-nes.json')}
 CODE = ['schema_v4.sql', 'rom_headers.py', 'engine_v4.py', 'nointro_db.py', 'build_db.py', 'finalize_db.py',
-        'import_ra.py', 'ra_report.py', 'update_db.py', 'retune_db.py', 'migrate_v4.py', 'export_set.py', 'build_catalog_release.py', 'import_game_names.py', 'game_names_schema.sql', 'export_nointro_parents.py']
+        'import_ra.py', 'ra_report.py', 'update_db.py', 'retune_db.py', 'migrate_v4.py', 'export_set.py', 'build_catalog_release.py', 'import_game_names.py', 'game_names_schema.sql', 'export_nointro_parents.py', 'normalize_db.py']
 # Resource names used before the 2026-10-05 rename; the same code now lives under the names above.
 OBSOLETE = ('cart_schema.sql', 'cart_headers.py', 'cart_engine.py', 'cart_nointro.py', 'build_cart_db.py', 'update_cart_db.py',
             'finalize_cart_db.py', 'tests_cart.py', 'storage-experiment')
 
 
-SIBLINGS = {'nes': ('fds',), 'fds': ('nes',), 'snes': ('satellaview',), 'satellaview': ('snes',)}
-SHARED_RA_CONSOLE = {'satellaview'}  # RA lists Satellaview games under the SNES console
+SIBLINGS = {'nes': ('fds',), 'fds': ('nes',), 'snes': ('satellaview',), 'satellaview': ('snes',), 'wswan': ('wswanc',), 'wswanc': ('wswan',),
+            'ngp': ('ngpc',), 'ngpc': ('ngp',)}
+# RA console shared with another platform: Satellaview under SNES; WonderSwan + Color (53) and NeoGeo Pocket + Color (14).
+SHARED_RA_CONSOLE = {'satellaview', 'wswan', 'wswanc', 'ngp', 'ngpc'}
 
 
 def resource_files(platform):
     """Resource name -> (kind, path relative to the repository) for every file-backed resource; shared with the release manifest."""
     out = {name: ('sql' if name.endswith('.sql') else 'python', f'tools/{name}') for name in CODE}
     out['tests_v4.py'] = ('python', 'tests/test_v4.py')
+    # Local-only tools and notes: embedded in the populated database as local/<name>; build_catalog.py removes
+    # every local/ resource, and the files are not published.
+    for f in sorted((ROOT / 'local').glob('*')):
+        if f.suffix in ('.py', '.md'): out['local/' + f.name] = ('python' if f.suffix == '.py' else 'markdown', f'local/{f.name}')
     out.update(DOCS)
     if platform == 'nes':
         out.update(NES_DOCS)
@@ -108,7 +115,7 @@ def main(full, catalog):
     c.close()
     reports = ROOT / 'reports'; reports.mkdir(exist_ok=True)
     # Sibling databases hold the other platform of a shared RA console or of mixed RA folders (NES<->FDS, SNES<->Satellaview).
-    def db_path(code): return full.parent / ('RetroBoxDB.sqlite' if code == 'nes' else f"RetroBoxDB.{B.PLATFORMS[code]['label']}.sqlite")
+    def db_path(code): return B.db_path(code, full.parent)
     sib = {code: str(db_path(code)) for code in SIBLINGS.get(platform, ()) if db_path(code).exists()}
     rr = importlib.import_module('ra_report'); rr.main(str(full), str(reports / f'ra-{platform}'), sib, platform in SHARED_RA_CONSOLE)
     c = sqlite3.connect(full)

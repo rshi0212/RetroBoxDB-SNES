@@ -47,6 +47,14 @@ PLATFORM_ADAPTERS = {
                     'table': 'bsx_hardware', 'rom_ext': ('.bs', '.sfc', '.bin')},
     'fds': {'name': 'Nintendo Family Computer Disk System', 'parser': parse_fds, 'cuts': fds_cuts,
             'table': 'fds_hardware', 'rom_ext': ('.fds', '.qd', '.bin'), 'header_len': lambda d: 16 if d[:4] == b'FDS\x1a' else 0},
+    'mastersystem': {'name': 'Sega Master System / Mark III', 'parser': parse_sms, 'cuts': lambda data: set(),
+            'table': 'sms_hardware', 'rom_ext': ('.sms', '.bin')},
+    'sega32x': {'name': 'Sega 32X', 'parser': parse_32x, 'cuts': _md_cuts, 'table': 'md_hardware', 'rom_ext': ('.32x', '.bin')},
+    'wswan': {'name': 'Bandai WonderSwan', 'parser': parse_ws, 'cuts': lambda data: set(), 'table': 'ws_hardware', 'rom_ext': ('.ws', '.bin')},
+    'wswanc': {'name': 'Bandai WonderSwan Color', 'parser': parse_ws, 'cuts': lambda data: set(), 'table': 'ws_hardware', 'rom_ext': ('.wsc', '.ws', '.bin')},
+    'ngp': {'name': 'SNK NeoGeo Pocket', 'parser': parse_ngp, 'cuts': lambda data: set(), 'table': 'ngp_hardware', 'rom_ext': ('.ngp', '.bin')},
+    'ngpc': {'name': 'SNK NeoGeo Pocket Color', 'parser': parse_ngp, 'cuts': lambda data: set(), 'table': 'ngp_hardware', 'rom_ext': ('.ngc', '.ngp', '.bin')},
+    'pokemini': {'name': 'Nintendo Pokemon Mini', 'parser': parse_pokemini, 'cuts': lambda data: set(), 'table': 'pokemini_hardware', 'rom_ext': ('.min',)},
 }
 
 
@@ -66,7 +74,8 @@ def torrentzip_hashes(entries):
 
 
 def ra_hash(platform, data):
-    """RetroAchievements content hash (rcheevos rc_hash_nes / rc_hash_fds / rc_hash_snes; plain buffer MD5 for Mega Drive, GB, GBC and GBA)."""
+    """RetroAchievements content hash (rcheevos rc_hash_nes / rc_hash_fds / rc_hash_snes; plain buffer MD5 for Mega Drive, GB, GBC,
+    GBA, Master System, 32X, WonderSwan, NeoGeo Pocket and Pokemon Mini)."""
     if platform == 'nes' and data[:4] == b'NES\x1a':
         return hashlib.md5(data[16:]).hexdigest(), 'md5 after the 16-byte NES header (rcheevos nes)'
     if platform == 'fds' and data[:4] == b'FDS\x1a':

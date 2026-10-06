@@ -1,19 +1,26 @@
-# RetroBoxDB storage v4: NES / SNES / Mega Drive / Game Boy / Game Boy Color / Game Boy Advance / Famicom Disk System / Satellaview
+# RetroBoxDB storage v4: NES / SNES / Mega Drive / Game Boy / Game Boy Color / Game Boy Advance / Famicom Disk System / Satellaview / Master System / 32X / WonderSwan / WonderSwan Color / NeoGeo Pocket / NeoGeo Pocket Color / Pokémon Mini
 
 [中文说明](RetroBoxDB.Storage-v4.zh-CN.md) | [Technical design](RetroBoxDB.Storage-v4.Technical-Design.en.md)
 
-Each platform has one populated database (ROM data, kept locally) and one public Catalog (metadata only). All eight use the same engine and the same storage format (v4); per-platform differences in block size, group cap, header parsing and import path are expressed by the database's `meta` values and platform adapter code. Original sizes include the No-Intro folders and the RetroAchievements-curated ROM folders (see Contents).
+Each platform has one populated database (ROM data, kept locally) and one public Catalog (metadata only). All 15 use the same engine and the same storage format (v4); per-platform differences in block size, group cap, header parsing and import path are expressed by the database's `meta` values and platform adapter code. Original sizes include the No-Intro folders and the RetroAchievements-curated ROM folders (see Contents).
 
 | Platform | Original size (ZIP / ROM files) | Populated database | Ratio (of ZIP / ROM) | Catalog | Single ROM (cold) | Single TorrentZip (cold) | Whole-set export by DAT |
 | --- | --- | ---: | ---: | ---: | --- | --- | --- |
-| NES | 4.35 GiB / 11.18 GiB | 537.0 MiB | 12.1% / 4.7% | 145.2 MiB | 2.325 s | 1.983 s | 71.7 MiB/s (7,090 files) |
-| SNES | 6.06 GiB / 10.90 GiB | 1.76 GiB | 29.1% / 16.2% | 53.7 MiB | 1.094 s | 1.397 s | 28.0 MiB/s (4,261 files) |
-| Mega Drive | 4.66 GiB / 9.61 GiB | 998.7 MiB | 20.9% / 10.2% | 44.8 MiB | 1.734 s | 2.087 s | 18.8 MiB/s (3,398 files) |
-| Game Boy | 401.1 MiB / 1.05 GiB | 177.8 MiB | 44.3% / 16.5% | 35.6 MiB | 1.594 s | 1.812 s | 41.0 MiB/s (2,232 files) |
-| Game Boy Color | 1.38 GiB / 4.42 GiB | 522.3 MiB | 37.1% / 11.5% | 45.5 MiB | 1.719 s | 1.857 s | 56.2 MiB/s (2,503 files) |
-| Game Boy Advance | 21.20 GiB / 44.24 GiB | 7.01 GiB | 33.1% / 15.9% | 57.8 MiB | 2.413 s | 2.682 s | 25.1 MiB/s (3,676 files) |
-| Famicom Disk System | 35.2 MiB / 85.7 MiB | 21.7 MiB | 61.6% / 25.3% | 10.0 MiB | 0.364 s | 0.334 s | 30.4 MiB/s (405 files) |
-| Satellaview | 324.1 MiB / 703.6 MiB | 115.6 MiB | 35.7% / 16.4% | 10.4 MiB | 2.78 s | 2.613 s | 61.6 MiB/s (561 files) |
+| NES | 4.35 GiB / 11.18 GiB | 529.9 MiB | 11.9% / 4.6% | 145.4 MiB | 2.325 s | 1.983 s | 71.7 MiB/s (7,090 files) |
+| SNES | 6.06 GiB / 10.90 GiB | 1.76 GiB | 29.1% / 16.2% | 54.0 MiB | 1.094 s | 1.397 s | 28.0 MiB/s (4,261 files) |
+| Mega Drive | 4.66 GiB / 9.61 GiB | 998.9 MiB | 20.9% / 10.2% | 45.0 MiB | 1.734 s | 2.087 s | 18.8 MiB/s (3,398 files) |
+| Game Boy | 401.1 MiB / 1.05 GiB | 178.0 MiB | 44.4% / 16.5% | 35.8 MiB | 1.594 s | 1.812 s | 41.0 MiB/s (2,232 files) |
+| Game Boy Color | 1.38 GiB / 4.42 GiB | 522.4 MiB | 37.1% / 11.5% | 45.8 MiB | 1.719 s | 1.857 s | 56.2 MiB/s (2,503 files) |
+| Game Boy Advance | 21.20 GiB / 44.24 GiB | 7.01 GiB | 33.1% / 15.9% | 58.1 MiB | 2.413 s | 2.682 s | 25.1 MiB/s (3,676 files) |
+| Famicom Disk System | 35.2 MiB / 85.7 MiB | 21.9 MiB | 62.2% / 25.5% | 10.2 MiB | 0.364 s | 0.334 s | 30.4 MiB/s (405 files) |
+| Satellaview | 324.1 MiB / 703.6 MiB | 115.9 MiB | 35.8% / 16.5% | 10.6 MiB | 2.78 s | 2.613 s | 61.6 MiB/s (561 files) |
+| Master System | 177.4 MiB / 392.5 MiB | 84.7 MiB | 47.8% / 21.6% | 18.9 MiB | 1.783 s | 1.799 s | 43.9 MiB/s (1,189 files) |
+| 32X | 593.1 MiB / 1.09 GiB | 87.7 MiB | 14.8% / 7.8% | 3.8 MiB | 1.524 s | 1.707 s | 69.9 MiB/s (219 files) |
+| WonderSwan | 150.5 MiB / 383.0 MiB | 81.2 MiB | 54.0% / 21.2% | 3.9 MiB | 2.225 s | 2.433 s | 53.2 MiB/s (257 files) |
+| WonderSwan Color | 246.6 MiB / 659.1 MiB | 126.5 MiB | 51.3% / 19.2% | 3.9 MiB | 1.226 s | 1.398 s | 54.2 MiB/s (253 files) |
+| NeoGeo Pocket | 5.3 MiB / 13.7 MiB | 6.2 MiB | 117.0% / 45.0% | 1.7 MiB | 0.091 s | 0.186 s | 29.5 MiB/s (13 files) |
+| NeoGeo Pocket Color | 93.0 MiB / 261.8 MiB | 38.0 MiB | 40.9% / 14.5% | 3.6 MiB | 0.943 s | 1.184 s | 52.5 MiB/s (128 files) |
+| Pokémon Mini | 8.9 MiB / 35.9 MiB | 4.9 MiB | 55.4% / 13.8% | 2.1 MiB | 0.074 s | 0.118 s | 47.6 MiB/s (46 files) |
 
 Catalogs are fresh SQLite files with empty `compression_groups`, `chunks` and `object_chunks` tables: no ROM data, original DAT/DB/Dump Log payloads or compressed data. Export performance was measured on this machine (Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, Python 3.14) while idle, with all checks included:
 
@@ -40,6 +47,13 @@ Sample results (MiB, block metadata estimate included; group sizes were then set
 | Game Boy Advance | 602.8 | — | 1 MiB / 128 MiB | 228.0 |
 | Famicom Disk System (whole set) | 33.7 | — | 64 KiB / 128 MiB | 10.1 |
 | Satellaview (whole set) | 324.1 | — | 32 KiB / 256 MiB | 103.8 |
+| Master System (whole set) | 177.4 | — | 128 KiB / 256 MiB | 62.6 |
+| 32X (whole set) | 593.1 | — | 32 KiB / 256 MiB | 83.9 |
+| WonderSwan (whole set) | 150.5 | — | 64 KiB / 256 MiB | 76.0 |
+| WonderSwan Color (whole set) | 246.6 | — | 64 KiB / 128 MiB | 122.1 |
+| NeoGeo Pocket (whole set) | 5.3 | — | 128 KiB / 32 MiB | 3.1 |
+| NeoGeo Pocket Color (whole set) | 93.0 | — | 128 KiB / 256 MiB | 33.0 |
+| Pokémon Mini (whole set) | 8.9 | — | 256 KiB / 32 MiB | 1.5 |
 
 Change of compressed size on real data against the base group; the last column is the measured result after applying the chosen cap to the whole database:
 
@@ -64,6 +78,7 @@ Other measurements:
 - **NES**: migrated to v4 with 8 KiB blocks (cut at header/trainer/PRG/CHR boundaries) and 256 MiB groups. On the full database the v3 payload (489 lzma2-4m groups plus XOR-delta loose blocks, 382,082,581 bytes) became 344,223,238 bytes (−9.91%); the real-data curve was 64 MiB −1.40%, 128 MiB −2.59%, 256 MiB −5.66% against 32 MiB groups, smaller caps stay more than 0.5% above the 256 MiB result, so 256 MiB is used.
 - **FDS**: 64 KiB blocks (one block per side) in a single 128 MiB group: 10.055 MiB in total against 33.72 MiB of ZIPs and 28.21 MiB with per-file LZMA. With one group the compressed size is about 9.9 MiB for every block size; smaller blocks only add metadata. 64 MiB groups split the platform into two groups (+3.8%). Side-aligned cuts do not change the compressed size but let headered and headerless copies of a side deduplicate.
 - **Satellaview**: 32 KiB blocks and 256 MiB groups: 103.779 MiB in total against 324.15 MiB of ZIPs and 240.46 MiB with per-file LZMA. Block deduplication removes most of the data (BS memory packs share padding and repeated broadcasts): 703.62 MiB of files become 278.78 MiB of unique 32 KiB blocks. At 256 MiB groups 8, 16, 32 and 64 KiB blocks give 106.862, 103.935, 103.779 and 104.615 MiB; with 16 KiB blocks 128 MiB groups are 3.18% larger than 256 MiB groups, so the 256 MiB ceiling is used.
+- **Master System, 32X, WonderSwan, WonderSwan Color, NeoGeo Pocket, NeoGeo Pocket Color, Pokémon Mini** (added 2026-10-06): each whole local collection (No-Intro folders plus the platform's files in its RA folder) was measured for 8–256 KiB blocks × 32–256 MiB groups (`assessment/tools/storage_eval_platform.py`, `assessment/data/storage-experiment-<platform>.json`; caps above the platform's unique data are measured once). Rule: the smallest total; among the configurations within 0.5% of it, the smallest block, then the smallest group (finer deduplication for later revisions, less decoding per read). Master System 128 KiB / 256 MiB: 62.61 MiB (ZIPs 177.42 MiB, per-file LZMA 105.80 MiB; 0.17% above the smallest); 32X 32 KiB / 256 MiB: 83.85 MiB (ZIPs 593.11 MiB, per-file LZMA 281.98 MiB; 0.32% above the smallest); WonderSwan 64 KiB / 256 MiB: 75.97 MiB (ZIPs 150.46 MiB, per-file LZMA 100.84 MiB; 0.45% above the smallest); WonderSwan Color 64 KiB / 128 MiB: 122.06 MiB (ZIPs 246.58 MiB, per-file LZMA 176.38 MiB; 0.23% above the smallest); NeoGeo Pocket 128 KiB / 32 MiB: 3.08 MiB (ZIPs 5.26 MiB, per-file LZMA 3.72 MiB; 0.36% above the smallest); NeoGeo Pocket Color 128 KiB / 256 MiB: 33.02 MiB (ZIPs 92.97 MiB, per-file LZMA 64.83 MiB; 0.25% above the smallest); Pokémon Mini 256 KiB / 32 MiB: 1.54 MiB (ZIPs 8.91 MiB, per-file LZMA 5.40 MiB; 0.33% above the smallest).
 
 ## Storage v4 in brief
 
@@ -71,7 +86,7 @@ Other measurements:
 - Each block keeps its ID, size and SHA256; objects are assembled from blocks and exports check the full CRC32/MD5/SHA1/SHA256 set.
 - Reads decode a group only up to the bytes they need; every block is still checked against its SHA256. The decode cache holds two groups; an object whose blocks lie in several groups (for example a multicart) is read group by group, decoding each group once; audits and bulk exports raise the cache to at most 2 GiB (and at most the decoded size of all groups) and decode whole groups, so no partial decoder keeps its dictionary window.
 - NES keeps 16-byte headers separate from bodies, headered and headerless dumps share one body, and 8 KiB blocks follow header/PRG/CHR boundaries.
-- Source ZIPs are kept as checksums and regenerated from TorrentZip plans. The eight databases hold 50,346 source ZIPs (No-Intro and RetroAchievements sets, all TorrentZips); 50,346 of them are checked to reproduce byte-for-byte (`v_file_checksums.exported_bytes_equal_source`).
+- Source ZIPs are kept as checksums and regenerated from TorrentZip plans. The 15 databases hold 53,534 source ZIPs (No-Intro and RetroAchievements sets, all TorrentZips); 53,534 of them are checked to reproduce byte-for-byte (`v_file_checksums.exported_bytes_equal_source`).
 - The format marker is `user_version=4`. The v3 engine refuses v4 files; the v4 engine reads v2, v3 and v4.
 
 | Platform | Block | Group cap / dictionary | Groups | Unique block bytes → stored |
@@ -84,6 +99,13 @@ Other measurements:
 | Game Boy Advance | 1 MiB | 256 MiB | 123 | 27.43 GiB → 6.95 GiB |
 | Famicom Disk System | 64 KiB | 128 MiB | 1 | 78.8 MiB → 10.2 MiB |
 | Satellaview | 32 KiB | 256 MiB | 2 | 280.3 MiB → 102.0 MiB |
+| Master System | 128 KiB | 256 MiB | 2 | 241.8 MiB → 64.2 MiB |
+| 32X | 32 KiB | 256 MiB | 2 | 346.1 MiB → 80.4 MiB |
+| WonderSwan | 64 KiB | 256 MiB | 1 | 208.5 MiB → 75.5 MiB |
+| WonderSwan Color | 64 KiB | 128 MiB | 4 | 359.0 MiB → 120.3 MiB |
+| NeoGeo Pocket | 128 KiB | 32 MiB | 1 | 10.7 MiB → 3.1 MiB |
+| NeoGeo Pocket Color | 128 KiB | 256 MiB | 2 | 158.2 MiB → 32.9 MiB |
+| Pokémon Mini | 256 KiB | 32 MiB | 1 | 23.1 MiB → 1.5 MiB |
 
 ## Contents
 
@@ -92,18 +114,30 @@ Source collections (`source_collections`, registered per folder; ZIP members car
 | | NES | SNES | Mega Drive | Game Boy | Game Boy Color | Game Boy Advance | Famicom Disk System | Satellaview |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | No-Intro (ZIPs / size) | 21,792 / 4.12 GiB | 4,898 / 3.99 GiB | 5,281 / 3.93 GiB | 2,671 / 295.8 MiB | 3,006 / 1.06 GiB | 3,946 / 14.42 GiB | 720 / 32.4 MiB | 699 / 302.4 MiB |
-| RetroAchievements sets (ZIPs / size) | 1,969 / 229.8 MiB | 1,836 / 2.07 GiB | 934 / 753.3 MiB | 720 / 105.3 MiB | 575 / 326.7 MiB | 1,206 / 6.78 GiB | 53 / 2.8 MiB | 40 / 21.7 MiB |
+| RetroAchievements sets (ZIPs / size) | 1,973 / 230.3 MiB | 1,836 / 2.07 GiB | 934 / 753.3 MiB | 720 / 105.3 MiB | 575 / 326.7 MiB | 1,206 / 6.78 GiB | 53 / 2.8 MiB | 40 / 21.7 MiB |
+
+| | Master System | 32X | WonderSwan | WonderSwan Color | NeoGeo Pocket | NeoGeo Pocket Color | Pokémon Mini |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| No-Intro (ZIPs / size) | 1,674 / 150.9 MiB | 375 / 528.8 MiB | 258 / 121.5 MiB | 265 / 195.6 MiB | 13 / 4.4 MiB | 130 / 62.0 MiB | 50 / 6.2 MiB |
+| RetroAchievements sets (ZIPs / size) | 201 / 26.5 MiB | 39 / 64.3 MiB | 29 / 29.0 MiB | 45 / 51.0 MiB | 1 / 0.8 MiB | 53 / 31.0 MiB | 51 / 2.7 MiB |
 
 | | NES | SNES | Mega Drive | Game Boy | Game Boy Color | Game Boy Advance | Famicom Disk System | Satellaview |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Local ZIPs | 23,761 | 6,734 | 6,215 | 3,391 | 3,581 | 5,152 | 773 | 739 |
+| Local ZIPs | 23,765 | 6,734 | 6,215 | 3,391 | 3,581 | 5,152 | 773 | 739 |
 | ROM records | 18,414 | 5,239 | 3,959 | 2,538 | 2,784 | 4,143 | 703 | 602 |
 | Games / releases | 3,477 / 7,385 | 1,996 / 4,329 | 1,581 / 3,503 | 1,419 / 2,299 | 1,576 / 2,622 | 1,901 / 3,750 | 307 / 408 | 606 / 609 |
 | Local ROMs in no DAT | 2,849 | 978 | 561 | 306 | 279 | 467 | 9 | 34 |
 
+| | Master System | 32X | WonderSwan | WonderSwan Color | NeoGeo Pocket | NeoGeo Pocket Color | Pokémon Mini |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Local ZIPs | 1,875 | 414 | 287 | 310 | 14 | 183 | 101 |
+| ROM records | 1,230 | 228 | 265 | 268 | 13 | 160 | 83 |
+| Games / releases | 774 / 1,238 | 61 / 227 | 228 / 257 | 217 / 253 | 12 / 13 | 76 / 128 | 22 / 46 |
+| Local ROMs in no DAT | 39 | 9 | 8 | 15 | 0 | 32 | 37 |
+
 Every local Parent-Clone DAT version is imported and scanned; `dat_changes` diffs each older version against the newest and older DAT entries join the newest DAT's release through that diff. Platforms with several DAT formats (NES headered/headerless, FDS FDS/QD) diff each format against its own older versions; the primary format (first in the list) creates games and releases, and entries of other formats join the primary release of the same name, else the game of their parent.
 
-The RetroAchievements-curated ROM folders (`/mnt/MyShare/RetroAchievements/RA - <platform>`) are imported like the No-Intro folders: ROMs already stored only gain file records and a source link; new ROMs (hacks, translations, homebrew, versions No-Intro does not list) are stored with block deduplication. A ROM outside every DAT joins the family of the stored ROMs it shares the most blocks with (`object_families.basis='shared_blocks'`; most hacks land next to their original), else a title family. The RA NES folder also holds FDS disk images; the NES import skips and reports them and the FDS database imports them. Satellaview (BS-X, `.bs`) files in the RA SNES folder belong to a separate platform: the SNES import skips and reports them and the Satellaview database imports them. `.nes` files in the RA FDS folder (FDS cartridge conversions, pirate carts) belong to NES and are skipped by the FDS import (the NES database holds them).
+The RetroAchievements-curated ROM folders (`/mnt/MyShare/RetroAchievements/RA - <platform>`) are imported like the No-Intro folders: ROMs already stored only gain file records and a source link; new ROMs (hacks, translations, homebrew, versions No-Intro does not list) are stored with block deduplication. A ROM outside every DAT joins the family of the stored ROMs it shares the most blocks with (`object_families.basis='shared_blocks'`; most hacks land next to their original), else a title family. The RA NES folder also holds FDS disk images; the NES import skips and reports them and the FDS database imports them. Satellaview (BS-X, `.bs`) files in the RA SNES folder belong to a separate platform: the SNES import skips and reports them and the Satellaview database imports them. `.nes` files in the RA FDS folder (FDS cartridge conversions, pirate carts) belong to NES and are skipped by the FDS import (the NES database holds them). RA has one set each for WonderSwan + WonderSwan Color and for NeoGeo Pocket + NeoGeo Pocket Color: both databases import that folder and keep their own extension (`.ws` / `.wsc`, `.ngp` / `.ngc`); the other platform's files are skipped and reported.
 
 - **NES** (2 DATs): 20260713-141345: 7,100/7,288; 20261002-002752: 7,095/7,390
 - **SNES** (2 DATs): 20260710-203222: 4,255/4,318; 20261003-140326: 4,261/4,331
@@ -113,6 +147,13 @@ The RetroAchievements-curated ROM folders (`/mnt/MyShare/RetroAchievements/RA - 
 - **Game Boy Advance** (4 DATs): 20260531-074517: 3,676/3,745; 20260707-143610: 3,676/3,748; 20260812-060017: 3,676/3,749; 20260929-130236: 3,676/3,750
 - **Famicom Disk System** (3 DATs): 20260517-061737: 405/407; 20260617-195332: 295/296; 20260930-033941: 294/295
 - **Satellaview** (3 DATs): 20260619-093425: 569/603; 20260814-103513: 566/604; 20260919-025009: 562/610
+- **Master System** (4 DATs): 20260527-203639: 1,191/1,215; 20260706-223420: 1,191/1,216; 20260809-210908: 1,191/1,240; 20260918-065535: 1,189/1,238
+- **32X** (1 DATs): 20260317-140429: 219/227
+- **WonderSwan** (1 DATs): 20260525-011654: 257/257
+- **WonderSwan Color** (1 DATs): 20260525-011610: 253/253
+- **NeoGeo Pocket** (1 DATs): 20250904-215533: 13/13
+- **NeoGeo Pocket Color** (3 DATs): 20240506-123728: 128/128; 20260626-085623: 128/128; 20260919-122044: 128/128
+- **Pokémon Mini** (1 DATs): 20260529-125415: 46/46
 
 ## No-Intro DB Export and Dump Log
 
@@ -124,11 +165,19 @@ The RetroAchievements-curated ROM folders (`/mnt/MyShare/RetroAchievements/RA - 
 | Documented hardware assertions | 6,412 | 5,399 | 2,017 | 2,810 | 2,830 | 3,188 | 8 | 6 |
 | Dump Log: verified / trusted unverified / unverified | 2,794 / 3,814 / 1,028 | 1,871 / 1,708 / 736 | 868 / 2,085 / 615 | 719 / 1,118 / 490 | 448 / 1,521 / 703 | 770 / 1,703 / 1,307 | 7 / 262 / 136 | 7 / 445 / 137 |
 
+| | Master System | 32X | WonderSwan | WonderSwan Color | NeoGeo Pocket | NeoGeo Pocket Color | Pokémon Mini |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Snapshot | 20260918-065535 | unknown | unknown | unknown | unknown | 20260919-122044 | unknown |
+| Archives / file identities | 1,245 / 1,279 | 228 / 239 | 257 / 278 | 254 / 263 | 13 / 22 | 128 / 215 | 46 / 49 |
+| Files with local payload | 1,192 | 221 | 257 | 253 | 13 | 129 | 49 |
+| Documented hardware assertions | 367 | 35 | 318 | 263 | 11 | 215 | 20 |
+| Dump Log: verified / trusted unverified / unverified | 435 / 791 / 15 | 23 / 175 / 29 | 58 / 199 / 0 | 53 / 191 / 9 | 8 / 4 / 1 | 81 / 35 / 12 | 9 / 9 / 28 |
+
 ## RetroAchievements
 
-RA public-API snapshots (`API_GetGameList`) are stored without credentials. Each ROM's RA hash follows rcheevos (NES: body MD5 without the 16-byte header; FDS: drop a 16-byte fwNES header when present; SNES: drop a 512-byte copier header when size % 8192 = 512; other platforms: whole-file MD5). Matching is exact. Console IDs: NES 7, SNES 3, MD 1, GB 4, GBC 6, GBA 5, FDS 81; RA has no Satellaview console, its games are listed under SNES (3) and hashed with the SNES method.
+RA public-API snapshots (`API_GetGameList`) are stored without credentials. Each ROM's RA hash follows rcheevos (NES: body MD5 without the 16-byte header; FDS: drop a 16-byte fwNES header when present; SNES: drop a 512-byte copier header when size % 8192 = 512; other platforms: whole-file MD5). Matching is exact. Console IDs: NES 7, SNES 3, MD 1, GB 4, GBC 6, GBA 5, FDS 81, Master System 11, 32X 10, WonderSwan (both) 53, NeoGeo Pocket (both) 14, Pokémon Mini 24; RA has no Satellaview console, its games are listed under SNES (3) and hashed with the SNES method.
 
-Cross-database links: some RA games have their ROM in a sibling platform's database (FDS-console cartridge conversions in NES, SNES-console BS games in Satellaview). The report looks these hashes up in the sibling databases (NES<->FDS, SNES<->Satellaview) and marks them `local_other_platform` with the database in `other_platform_db`; they are not counted as gaps. Because Satellaview shares the SNES console, its report covers only RA games tied to its own ROMs, DAT entries or DB Export files.
+Cross-database links: some RA games have their ROM in a sibling platform's database (FDS-console cartridge conversions in NES, SNES-console BS games in Satellaview). The report looks these hashes up in the sibling databases (NES<->FDS, SNES<->Satellaview, WonderSwan<->WonderSwan Color, NeoGeo Pocket<->NeoGeo Pocket Color) and marks them `local_other_platform` with the database in `other_platform_db`; they are not counted as gaps. Because Satellaview shares the SNES console, and WonderSwan / WonderSwan Color and NeoGeo Pocket / NeoGeo Pocket Color each share one console, those reports cover only RA games tied to their own ROMs, DAT entries or DB Export files.
 
 `v_ra_collection` lists every ROM file of an RA set with its RA game, No-Intro DAT entries and release, with status `in_nointro_dat`, `ra_only` or `ra_hash_unknown` (hash absent from the latest RA snapshot). The `local_sources` column of `reports/ra-<platform>-games.csv` names the source collections holding each game's local ROMs; `reports/ra-<platform>-collection-unknown.csv` lists the files with unknown hashes and `reports/ra-<platform>-missing.csv` the RA games still without a local ROM (gap list).
 
@@ -142,6 +191,16 @@ Cross-database links: some RA games have their ROM in a sibling platform's datab
 | No No-Intro counterpart (hacks) | 13 (9) | 90 (62) | 7 (5) | 13 (5) | 16 (3) | 23 (12) | 2 (1) | 0 (0) |
 | Local ROMs with achievements | 3,385 | 1,845 | 942 | 725 | 584 | 1,230 | 47 | 44 |
 
+| | Master System | 32X | WonderSwan | WonderSwan Color | NeoGeo Pocket | NeoGeo Pocket Color | Pokémon Mini |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| RA games with achievements | 183 | 36 | 23 | 33 | 1 | 41 | 40 |
+| With a local ROM | 181 | 35 | 23 | 33 | 1 | 41 | 39 |
+| ROM in a sibling database | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| DAT only (ROM missing) | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| DB Export file only | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| No No-Intro counterpart (hacks) | 2 (2) | 1 (0) | 0 (0) | 0 (0) | 0 (0) | 0 (0) | 1 (0) |
+| Local ROMs with achievements | 235 | 39 | 30 | 44 | 1 | 54 | 51 |
+
 ## Chinese names
 
 | | NES | SNES | Mega Drive | Game Boy | Game Boy Color | Game Boy Advance | Famicom Disk System | Satellaview |
@@ -151,11 +210,18 @@ Cross-database links: some RA games have their ROM in a sibling platform's datab
 | Releases with Chinese names (direct + inherited) | 3,698 + 389 | 3,864 + 73 | 2,550 + 117 | 1,803 + 59 | 1,590 + 110 | 3,315 + 47 | 402 + 4 | 0 + 0 |
 | Local ROMs with Chinese names | 8,104 | 3,909 | 2,656 | 1,835 | 1,663 | 3,350 | 692 | 0 |
 
+| | Master System | 32X | WonderSwan | WonderSwan Color | NeoGeo Pocket | NeoGeo Pocket Color | Pokémon Mini |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| CSV rows / translated / unique Chinese names | 699 / 542 / 342 | 213 / 213 / 54 | 264 / 148 / 118 | 242 / 115 / 97 | 10 / 10 / 9 | 132 / 132 / 83 | 44 / 43 / 17 |
+| Matched / ambiguous / unmatched | 697 / 1 / 1 | 204 / 6 / 3 | 257 / 0 / 7 | 242 / 0 / 0 | 10 / 0 / 0 | 128 / 0 / 4 | 44 / 0 / 0 |
+| Releases with Chinese names (direct + inherited) | 542 + 30 | 203 + 1 | 141 + 0 | 115 + 0 | 10 + 0 | 128 + 0 | 43 + 0 |
+| Local ROMs with Chinese names | 563 | 203 | 141 | 115 | 10 | 128 | 43 |
+
 Satellaview has no Chinese name source yet, so its column is 0; once a name CSV (`Name EN,Name CN` or `EN Name,CN Name`) exists, place it at `data/Nintendo - Satellaview.csv` and run `tools/update_db.py RetroBoxDB.Satellaview.sqlite --names "data/Nintendo - Satellaview.csv"`.
 
 ## Information layers
 
-`v_information_sources` lists every information source with its version: existing (DAT versions, ROM files, source collections), extended (No-Intro DB/Dump Log snapshots, RA snapshots, name sources, documented hardware assertions) and future placeholders (Batocera/ScreenScraper fields, media slots, scrape records). Each source is imported as a versioned, idempotent snapshot; older snapshots are kept.
+`v_information_sources` lists every information source with its version: existing (DAT versions, ROM files, source collections), extended (No-Intro DB/Dump Log snapshots, RA snapshots, name sources, documented hardware assertions), provider tables (filled only in local databases; empty in the Catalog) and placeholders (Batocera media slots). Each source is imported as a versioned, idempotent snapshot; older snapshots are kept.
 
 ## Export and maintenance
 
@@ -163,4 +229,4 @@ Satellaview has no Chinese name source yet, so its column is 0; once a name CSV 
 
 The handling of the 2026-10-04 audit findings is recorded in [reports/audit-resolution-20261004.md](reports/audit-resolution-20261004.md). `engine.py` and the other `resources` entries are executable code; run them only from a database you built or a Release asset whose SHA256 you verified.
 
-Populated-database audits: NES 19,069 objects / 9 groups / 25,368 archive plans; SNES 5,243 objects / 57 groups / 5,774 archive plans; Mega Drive 3,963 objects / 20 groups / 5,367 archive plans; Game Boy 2,546 objects / 5 groups / 2,776 archive plans; Game Boy Color 2,791 objects / 13 groups / 2,931 archive plans; Game Boy Advance 4,149 objects / 123 groups / 4,396 archive plans; Famicom Disk System 712 objects / 1 groups / 728 archive plans; Satellaview 607 objects / 2 groups / 923 archive plans; all passed.
+Populated-database audits: NES 19,069 objects / 9 groups / 25,368 archive plans; SNES 5,243 objects / 57 groups / 5,774 archive plans; Mega Drive 3,963 objects / 20 groups / 5,367 archive plans; Game Boy 2,546 objects / 5 groups / 2,776 archive plans; Game Boy Color 2,791 objects / 13 groups / 2,931 archive plans; Game Boy Advance 4,149 objects / 123 groups / 4,396 archive plans; Famicom Disk System 712 objects / 1 groups / 728 archive plans; Satellaview 607 objects / 2 groups / 923 archive plans; Master System 1,236 objects / 2 groups / 1,523 archive plans; 32X 231 objects / 2 groups / 387 archive plans; WonderSwan 268 objects / 1 groups / 269 archive plans; WonderSwan Color 271 objects / 4 groups / 278 archive plans; NeoGeo Pocket 16 objects / 1 groups / 16 archive plans; NeoGeo Pocket Color 165 objects / 2 groups / 171 archive plans; Pokémon Mini 86 objects / 1 groups / 88 archive plans; all passed.
